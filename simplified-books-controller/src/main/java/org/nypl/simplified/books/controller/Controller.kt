@@ -1,5 +1,6 @@
 package org.nypl.simplified.books.controller
 
+import android.content.Context
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.FluentFuture
 import com.google.common.util.concurrent.ListenableFuture
@@ -186,6 +187,14 @@ class Controller private constructor(
         this.accountEvents,
         this.accountProviders,
         provider)))
+  }
+
+  override fun migrateProfiles(context: Context): FluentFuture<kotlin.Unit> {
+    return FluentFuture.from(this.taskExecutor.submit(
+            ProfileMigrationTask(
+                    context,
+                    this.accountProviders,
+                    this.profiles.currentProfileUnsafe())))
   }
 
   override fun profileAccountDeleteByProvider(provider: URI): FluentFuture<AccountEventDeletion> {

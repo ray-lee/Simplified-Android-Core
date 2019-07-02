@@ -43,6 +43,9 @@ class SplashMainFragment : Fragment() {
     this.listener = this.activity as SplashListenerType
     this.subscription = this.listener.splashEvents.subscribe { event -> this.onSplashEvent(event) }
     this.listener.onSplashImageCreateFragment()
+
+    val future = this.listener.profileController.migrateProfiles(activity!!)
+    // TODO: We should hold the splash screen while this is happening, possibly show spinner
   }
 
   private fun onSplashImageTimedOut() {

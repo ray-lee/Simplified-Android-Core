@@ -1,5 +1,7 @@
 package org.nypl.simplified.profiles.controller.api;
 
+import android.content.Context;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FluentFuture;
 import com.io7m.jfunctional.Unit;
@@ -130,6 +132,13 @@ public interface ProfilesControllerType {
 
   FluentFuture<AccountEventCreation> profileAccountCreate(
     URI provider);
+
+  /**
+   * TODO: come back and write description
+   * @param context
+   * @return
+   */
+  FluentFuture<kotlin.Unit> migrateProfiles(Context context);
 
   /**
    * Create an account using the given account provider. The operation will fail if

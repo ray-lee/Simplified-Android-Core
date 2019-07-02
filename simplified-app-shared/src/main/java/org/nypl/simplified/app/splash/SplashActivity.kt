@@ -26,7 +26,6 @@ import org.nypl.simplified.splash.SplashImageFragment
 import org.nypl.simplified.splash.SplashListenerType
 import org.nypl.simplified.splash.SplashMainFragment
 import org.nypl.simplified.splash.SplashParameters
-import org.nypl.simplified.splash.DataMigrationTask
 import org.nypl.simplified.theme.ThemeControl
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -116,12 +115,6 @@ class SplashActivity : AppCompatActivity(), SplashListenerType {
 
     this.setTheme(Simplified.getCurrentTheme().themeWithNoActionBar)
     this.setContentView(R.layout.splash_base)
-
-    // Check to see if data has been migrated from the old file system
-    val dataMigrationTask = DataMigrationTask(this, this.profileController.profileAccountCurrent())
-    if (dataMigrationTask.dataMigrated == false) {
-        dataMigrationTask.call()
-    }
 
     this.splashEventSubscription =
       this.splashEvents.subscribe { event ->

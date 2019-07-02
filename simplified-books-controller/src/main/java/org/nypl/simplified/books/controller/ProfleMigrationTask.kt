@@ -63,50 +63,54 @@ class ProfileMigrationTask(
         }
 
     override fun call() {
-        logger.debug("Now migrating profiles..")
-        val startTime = System.currentTimeMillis()
+        if (profilesMigrated == false) {
+            logger.debug("Now migrating profiles..")
+            val startTime = System.currentTimeMillis()
 
-        val oldBaseDirectory = getDiskDataDir()
-        val oldAccountDirectories = oldBaseDirectory.list()
+            val oldBaseDirectory = getDiskDataDir()
+            val oldAccountDirectories = oldBaseDirectory.list()
 
-        for (oldAccount in oldAccountDirectories) {
-            val accountId = oldAccount
-            val booksDirectory = File(oldAccount, "books")
-            val accountProvider = accountProviders.call(com.io7m.jfunctional.Unit.unit())
-            for (provider in accountProvider.providers()) {
-                if (provider.value.idNumeric() == accountId) {
-                    val account = profile.createAccount(provider.value)
-                    val booksDatabase = account.bookDatabase()
-
-                    for (book in booksDirectory.list()) {
+            for (oldAccount in oldAccountDirectories) {
+                val accountId = oldAccount
+                val booksDirectory = File(oldAccount, "books")
+                val accountProvider = accountProviders.call(com.io7m.jfunctional.Unit.unit())
+                for (provider in accountProvider.providers()) {
+                    if (provider.value.idNumeric() == accountId) {
+                        val account = profile.createAccount(provider.value)
                         val booksDatabase = account.bookDatabase()
-                        val parser = OPDSJSONParser.newParser()
-                        val bookEntry = parser.parseAcquisitionFeedEntryFromStream(File(book, BOOK_JSON_FILENAME).inputStream())
-                        val bookID = BookIDs.newFromText(bookEntry.id)
-                        val entry = booksDatabase.createOrUpdate(bookID, bookEntry)
 
-                        return when (val handle = entry.findPreferredFormatHandle()) {
-                            is BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandleEPUB -> {
-                                handle.copyInBook(File(book, EPUB_FILENAME))
-                            }
-                            is BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandlePDF -> {
-                            }
-                            is BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandleAudioBook -> {
-                                handle.copyInManifestFile(File(book, AUDIOBOOK_FILENAME))
-                            }
-                            null -> {
+                        for (book in booksDirectory.list()) {
+                            val booksDatabase = account.bookDatabase()
+                            val parser = OPDSJSONParser.newParser()
+                            val bookEntry = parser.parseAcquisitionFeedEntryFromStream(File(book, BOOK_JSON_FILENAME).inputStream())
+                            val bookID = BookIDs.newFromText(bookEntry.id)
+                            val entry = booksDatabase.createOrUpdate(bookID, bookEntry)
+
+                            return when (val handle = entry.findPreferredFormatHandle()) {
+                                is BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandleEPUB -> {
+                                    handle.copyInBook(File(book, EPUB_FILENAME))
+                                }
+                                is BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandlePDF -> {
+                                }
+                                is BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandleAudioBook -> {
+                                    handle.copyInManifestFile(File(book, AUDIOBOOK_FILENAME))
+                                }
+                                null -> {
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        cleanUp(oldBaseDirectory)
-        profilesMigrated = true
-        val endTime = System.currentTimeMillis()
-        val seconds = (endTime - startTime) / 1000
-        logger.debug("Done migrating books, took $seconds seconds")
+            cleanUp(oldBaseDirectory)
+            profilesMigrated = true
+            val endTime = System.currentTimeMillis()
+            val seconds = (endTime - startTime) / 1000
+            logger.debug("Done migrating books, took $seconds seconds")
+        } else {
+            return
+        }
     }
 
     /**

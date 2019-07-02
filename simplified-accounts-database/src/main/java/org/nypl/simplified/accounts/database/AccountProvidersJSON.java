@@ -48,6 +48,7 @@ public final class AccountProvidersJSON {
 
     try {
       b.setId(id_uuid);
+      b.setIdNumeric(JSONParserUtilities.getInteger(obj, "id_numeric"));
 
       final URI catalogUrl = JSONParserUtilities.getURI(obj, "catalogUrl");
       b.setCatalogURI(catalogUrl);

@@ -101,6 +101,7 @@ abstract class ProfilesControllerContract {
   private fun fakeProvider(provider_id: String): AccountProvider {
     return AccountProvider.builder()
       .setId(URI.create(provider_id))
+      .setIdNumeric(23)
       .setDisplayName("Fake Library")
       .setSubtitle(Option.some("Imaginary books"))
       .setLogo(Option.some(URI.create("data:text/plain;base64,U3RvcCBsb29raW5nIGF0IG1lIQo=")))

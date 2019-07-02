@@ -41,6 +41,13 @@ public abstract class AccountProvider implements Comparable<AccountProvider> {
   public abstract URI id();
 
   /**
+   * @return The old-style numeric account provider URI
+   */
+
+  @Deprecated
+  public abstract int idNumeric();
+
+  /**
    * @return The display name
    */
 
@@ -247,6 +254,15 @@ public abstract class AccountProvider implements Comparable<AccountProvider> {
      */
 
     public abstract Builder setId(URI id);
+
+    /**
+     * @param id The provider ID
+     * @return The current builder
+     * @see #idNumeric()
+     */
+
+    @Deprecated
+    public abstract Builder setIdNumeric(int id);
 
     /**
      * @param name The display name

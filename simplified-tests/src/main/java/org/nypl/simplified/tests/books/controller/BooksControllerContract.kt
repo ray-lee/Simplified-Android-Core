@@ -104,6 +104,7 @@ abstract class BooksControllerContract {
   private fun fakeProvider(providerId: String): AccountProvider {
     return AccountProvider.builder()
       .setId(URI.create(providerId))
+      .setIdNumeric(23)
       .setDisplayName("Fake Library")
       .setSubtitle(Option.some("Imaginary books"))
       .setLogo(Option.some(URI.create("http://example.com/logo.png")))

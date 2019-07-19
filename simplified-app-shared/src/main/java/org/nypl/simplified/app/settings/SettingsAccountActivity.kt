@@ -25,7 +25,6 @@ import android.widget.TextView
 import android.widget.Toast
 import com.io7m.jfunctional.Some
 import com.io7m.jfunctional.Unit
-import com.io7m.junreachable.UnimplementedCodeException
 import org.joda.time.LocalDate
 import org.nypl.simplified.accounts.api.AccountAuthenticationCredentials
 import org.nypl.simplified.accounts.api.AccountBarcode
@@ -46,6 +45,7 @@ import org.nypl.simplified.app.R
 import org.nypl.simplified.app.ReportIssueActivity
 import org.nypl.simplified.app.Simplified
 import org.nypl.simplified.app.WebViewActivity
+import org.nypl.simplified.app.signup.ui.CardCreatorActivity
 import org.nypl.simplified.app.utilities.ErrorDialogUtilities
 import org.nypl.simplified.app.utilities.UIThread
 import org.nypl.simplified.documents.eula.EULAType
@@ -246,7 +246,8 @@ class SettingsAccountActivity : NavigationDrawerActivity() {
     if (accountProvider.cardCreatorURI != null) {
       this.tableSignup.visibility = View.VISIBLE
       this.signup.setOnClickListener {
-        throw UnimplementedCodeException()
+        val intent = Intent(this, CardCreatorActivity::class.java)
+        this.startActivity(intent)
       }
       this.signup.setText(R.string.need_card_button)
     } else {

@@ -55,6 +55,8 @@ android {
 }
 
 dependencies {
+  debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.1'
+
   implementation project(":simplified-main")
   implementation project(":simplified-accounts-source-filebased")
   implementation project(":simplified-accounts-source-nyplregistry")

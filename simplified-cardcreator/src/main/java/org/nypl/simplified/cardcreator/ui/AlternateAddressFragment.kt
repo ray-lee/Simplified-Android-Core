@@ -12,7 +12,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import org.koin.android.viewmodel.ext.android.viewModel
 import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
@@ -45,7 +45,7 @@ class AlternateAddressFragment : Fragment(), AdapterView.OnItemSelectedListener 
   private val NY_STATE = "NY"
   private lateinit var addressType: AddressType
 
-  private val viewModel: AddressViewModel by viewModels()
+  private val viewModel: AddressViewModel by viewModel()
 
   override fun onCreateView(
     inflater: LayoutInflater,

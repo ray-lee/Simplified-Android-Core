@@ -4,6 +4,9 @@ import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.core.KoinComponent
+import org.koin.core.get
+import org.koin.core.parameter.parametersOf
 import org.nypl.simplified.cardcreator.models.*
 import org.nypl.simplified.cardcreator.utils.Constants
 import retrofit2.Retrofit
@@ -46,36 +49,10 @@ internal interface CardCreatorService {
     @Body patron: Patron
   ): CreatePatronResponse
 
-  companion object {
+  companion object: KoinComponent {
     operator fun invoke(authUsername: String, authPassword: String): CardCreatorService {
-      val logging = run {
-        val httpLoggingInterceptor = HttpLoggingInterceptor()
-        httpLoggingInterceptor.apply {
-          httpLoggingInterceptor.level = HttpLoggingInterceptor.Level.BASIC
-        }
-      }
-
-      val auth = Interceptor {
-        val request = it.request().newBuilder()
-          .addHeader("Authorization",
-            Credentials.basic(
-              authUsername,
-              authPassword))
-          .build()
-        it.proceed(request)
-      }
-
-      val client: OkHttpClient = OkHttpClient.Builder()
-        .addInterceptor(logging)
-        .addInterceptor(auth)
-        .build()
-
-      return Retrofit.Builder()
-        .client(client)
-        .baseUrl(Constants.LIBRARY_SIMPLIFIED_BASE_URL)
-        .addConverterFactory(MoshiConverterFactory.create())
-        .build()
-        .create(CardCreatorService::class.java)
+      val retrofit: Retrofit = get { parametersOf(authUsername, authPassword)  }
+      return retrofit.create(CardCreatorService::class.java)
     }
   }
 }

@@ -3,6 +3,8 @@ package org.nypl.simplified.cardcreator
 import android.content.Context
 import android.content.Intent
 import androidx.fragment.app.Fragment
+import org.koin.core.context.loadKoinModules
+import org.nypl.simplified.cardcreator.di.cardCreatorModule
 import java.io.InputStream
 import java.util.Properties
 
@@ -14,6 +16,9 @@ class CardCreatorService(private val username: String, private val password: Str
       properties.load(configFile)
       val username = properties.getProperty("cardcreator.prod.username")
       val password = properties.getProperty("cardcreator.prod.password")
+
+
+      loadKoinModules(cardCreatorModule)
       return CardCreatorService(username, password)
     }
   }

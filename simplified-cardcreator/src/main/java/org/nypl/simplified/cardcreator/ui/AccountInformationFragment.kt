@@ -10,7 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import org.koin.android.viewmodel.ext.android.viewModel
 import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
@@ -39,7 +39,7 @@ class AccountInformationFragment : Fragment() {
   private val USERNAME_MAX_CHARS = 25
   private val USERNAME_AVAILABLE = "available-username"
 
-  private val viewModel: UsernameViewModel by viewModels()
+  private val viewModel: UsernameViewModel by viewModel()
 
   override fun onCreateView(
     inflater: LayoutInflater,

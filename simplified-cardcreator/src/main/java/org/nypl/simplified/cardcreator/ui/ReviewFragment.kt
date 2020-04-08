@@ -8,7 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import org.koin.android.viewmodel.ext.android.viewModel
 import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
@@ -38,7 +38,7 @@ class ReviewFragment : Fragment() {
   private val EMPTY = ""
   private val CARD_GRANTED = "card-granted"
 
-  private val viewModel: PatronViewModel by viewModels()
+  private val viewModel: PatronViewModel by viewModel()
 
   override fun onCreateView(
     inflater: LayoutInflater,

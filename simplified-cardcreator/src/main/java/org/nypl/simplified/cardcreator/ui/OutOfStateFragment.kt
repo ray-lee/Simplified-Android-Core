@@ -1,12 +1,11 @@
 package org.nypl.simplified.cardcreator.ui
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import org.koin.android.viewmodel.ext.android.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDirections
 import androidx.navigation.Navigation
@@ -30,7 +29,7 @@ class OutOfStateFragment : Fragment() {
   private val VALID_ADDRESS = "valid-address"
   private val ALTERNATE_ADDRESS = "alternate-addresses"
 
-  private val viewModel: AddressViewModel by viewModels()
+  private val viewModel: AddressViewModel by viewModel()
 
   override fun onCreateView(
     inflater: LayoutInflater,

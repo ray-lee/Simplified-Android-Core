@@ -23,7 +23,7 @@ import org.nypl.simplified.profiles.controller.api.ProfilesControllerType
 import org.nypl.simplified.ui.accounts.AccountFragment
 import org.nypl.simplified.ui.accounts.AccountFragmentParameters
 import org.nypl.simplified.ui.accounts.AccountRegistryFragment
-import org.nypl.simplified.ui.accounts.AccountsFragment
+import org.nypl.simplified.ui.accounts.AccountListFragment
 import org.nypl.simplified.ui.accounts.AccountsFragmentParameters
 import org.nypl.simplified.ui.catalog.CatalogFeedArguments
 import org.nypl.simplified.ui.catalog.CatalogFeedArguments.CatalogFeedArgumentsLocalBooks
@@ -231,7 +231,7 @@ class TabbedNavigationController private constructor(
 
   override fun openSettingsAccounts() {
     this.navigator.addFragment(
-      fragment = AccountsFragment.create(
+      fragment = AccountListFragment.create(
         AccountsFragmentParameters(
           shouldShowLibraryRegistryMenu = this.settingsConfiguration.allowAccountsRegistryAccess
         )

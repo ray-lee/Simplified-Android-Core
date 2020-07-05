@@ -30,10 +30,10 @@ import org.nypl.simplified.ui.toolbar.ToolbarHostType
  * A fragment that shows the set of accounts in the current profile.
  */
 
-class AccountsFragment : Fragment() {
+class AccountListFragment : Fragment() {
 
   private lateinit var accountList: RecyclerView
-  private lateinit var accountListAdapter: AccountsAdapter
+  private lateinit var accountListAdapter: AccountListAdapter
   private lateinit var accountListData: MutableList<AccountType>
   private lateinit var buildConfig: BuildConfigurationServiceType
   private lateinit var imageLoader: ImageLoaderType
@@ -51,10 +51,10 @@ class AccountsFragment : Fragment() {
      * Create a new accounts fragment for the given parameters.
      */
 
-    fun create(parameters: AccountsFragmentParameters): AccountsFragment {
+    fun create(parameters: AccountsFragmentParameters): AccountListFragment {
       val arguments = Bundle()
       arguments.putSerializable(PARAMETERS_ID, parameters)
-      val fragment = AccountsFragment()
+      val fragment = AccountListFragment()
       fragment.arguments = arguments
       return fragment
     }
@@ -117,7 +117,7 @@ class AccountsFragment : Fragment() {
     savedInstanceState: Bundle?
   ): View? {
     val layout =
-      inflater.inflate(R.layout.accounts, container, false)
+      inflater.inflate(R.layout.account_list, container, false)
 
     this.accountList =
       layout.findViewById(R.id.accountList)
@@ -138,7 +138,7 @@ class AccountsFragment : Fragment() {
         .subscribe(this::onAccountEvent)
 
     this.accountListAdapter =
-      AccountsAdapter(
+      AccountListAdapter(
         accounts = this.accountListData,
         imageLoader = this.imageLoader,
         onItemClicked = this::onAccountClicked,
@@ -158,7 +158,7 @@ class AccountsFragment : Fragment() {
       val toolbar = host.findToolbar()
 
       host.toolbarClearMenu()
-      toolbar.inflateMenu(R.menu.accounts)
+      toolbar.inflateMenu(R.menu.account_list)
 
       val accountAdd = toolbar.menu.findItem(R.id.accountsMenuActionAccountAdd)
       if (this.parameters.shouldShowLibraryRegistryMenu) {

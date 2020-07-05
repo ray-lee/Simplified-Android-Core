@@ -14,12 +14,12 @@ import org.nypl.simplified.ui.images.ImageLoaderType
  * An adapter for a list of accounts.
  */
 
-class AccountsAdapter(
+class AccountListAdapter(
   private val imageLoader: ImageLoaderType,
   private val accounts: List<AccountType>,
   private val onItemClicked: (AccountType) -> Unit,
   private val onItemLongClicked: (AccountType) -> Unit
-) : RecyclerView.Adapter<AccountsAdapter.AccountViewHolder>() {
+) : RecyclerView.Adapter<AccountListAdapter.AccountViewHolder>() {
 
   override fun onCreateViewHolder(
     parent: ViewGroup,

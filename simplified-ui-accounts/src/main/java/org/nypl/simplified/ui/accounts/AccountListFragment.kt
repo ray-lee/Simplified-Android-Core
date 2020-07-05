@@ -30,7 +30,7 @@ import org.nypl.simplified.ui.toolbar.ToolbarHostType
  * A fragment that shows the set of accounts in the current profile.
  */
 
-class AccountsFragment : Fragment() {
+class AccountListFragment : Fragment() {
 
   private lateinit var accountList: RecyclerView
   private lateinit var accountListAdapter: AccountsAdapter
@@ -51,10 +51,10 @@ class AccountsFragment : Fragment() {
      * Create a new accounts fragment for the given parameters.
      */
 
-    fun create(parameters: AccountsFragmentParameters): AccountsFragment {
+    fun create(parameters: AccountsFragmentParameters): AccountListFragment {
       val arguments = Bundle()
       arguments.putSerializable(PARAMETERS_ID, parameters)
-      val fragment = AccountsFragment()
+      val fragment = AccountListFragment()
       fragment.arguments = arguments
       return fragment
     }

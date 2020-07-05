@@ -35,7 +35,7 @@ import org.nypl.simplified.taskrecorder.api.TaskRecorder
 import org.nypl.simplified.tests.MockBooksController
 import org.nypl.simplified.tests.MockDocumentStore
 import org.nypl.simplified.tests.MutableServiceDirectory
-import org.nypl.simplified.ui.accounts.AccountsFragment
+import org.nypl.simplified.ui.accounts.AccountListFragment
 import org.nypl.simplified.ui.accounts.AccountsFragmentParameters
 import org.nypl.simplified.ui.images.ImageLoader
 import org.nypl.simplified.ui.images.ImageLoaderType
@@ -119,7 +119,7 @@ class SettingsAccountsActivity : AppCompatActivity(), ServiceDirectoryProviderTy
     this.account.loginStateMutable = this.states[0]
 
     this.fragment =
-      AccountsFragment.create(
+      AccountListFragment.create(
         AccountsFragmentParameters(
           shouldShowLibraryRegistryMenu = false
         )

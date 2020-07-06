@@ -130,7 +130,6 @@ class ErrorPageFragment : Fragment() {
       val activity = this.requireActivity()
       if (activity is ToolbarHostType) {
         val toolbar = activity.findToolbar()
-        toolbar.menu.clear()
         toolbar.setTitle(R.string.errorDetailsTitle)
         toolbar.subtitle = ""
       } else {

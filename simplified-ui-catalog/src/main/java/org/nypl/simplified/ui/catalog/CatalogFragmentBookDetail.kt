@@ -285,9 +285,7 @@ class CatalogFragmentBookDetail : Fragment() {
     toolbarHost: ToolbarHostType,
     toolbar: Toolbar
   ) {
-    val context = this.requireContext()
-    toolbarHost.toolbarClearMenu()
-    this.configureToolbarTitles(context, toolbar)
+    this.configureToolbarTitles(this.requireContext(), toolbar)
   }
 
   @UiThread

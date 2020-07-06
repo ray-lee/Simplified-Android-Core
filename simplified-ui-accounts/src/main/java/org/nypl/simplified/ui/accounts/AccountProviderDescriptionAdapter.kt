@@ -18,7 +18,7 @@ class AccountProviderDescriptionAdapter(
   private val accounts: List<AccountProviderDescription>,
   private val imageLoader: ImageLoaderType,
   private val onItemClicked: (AccountProviderDescription) -> Unit
-) : RecyclerView.Adapter<AccountProviderDescriptionAdapter.AccountViewHolder>() {
+) : RecyclerView.Adapter<AccountViewHolder>() {
 
   override fun onCreateViewHolder(
     parent: ViewGroup,
@@ -28,7 +28,7 @@ class AccountProviderDescriptionAdapter(
       LayoutInflater.from(parent.context)
     val item =
       inflater.inflate(R.layout.account_cell, parent, false)
-    return this.AccountViewHolder(item)
+    return AccountViewHolder(item)
   }
 
   override fun getItemCount(): Int {
@@ -42,7 +42,6 @@ class AccountProviderDescriptionAdapter(
     val account = this.accounts[position]
     holder.parent.setOnClickListener { this.onItemClicked.invoke(account) }
     holder.accountTitleView.text = account.title
-    holder.accountSubtitleView.text = ""
 
     ImageAccountIcons.loadAccountLogoIntoView(
       loader = this.imageLoader.loader,
@@ -51,13 +50,11 @@ class AccountProviderDescriptionAdapter(
       iconView = holder.accountIcon
     )
   }
+}
 
-  inner class AccountViewHolder(val parent: View) : RecyclerView.ViewHolder(parent) {
-    val accountIcon =
-      parent.findViewById<ImageView>(R.id.accountCellIcon)
-    val accountTitleView =
-      parent.findViewById<TextView>(R.id.accountCellTitle)
-    val accountSubtitleView =
-      parent.findViewById<TextView>(R.id.accountCellSubtitle)
-  }
+class AccountViewHolder(val parent: View) : RecyclerView.ViewHolder(parent) {
+  val accountIcon: ImageView =
+    parent.findViewById(R.id.accountCellIcon)
+  val accountTitleView: TextView =
+    parent.findViewById(R.id.accountCellTitle)
 }

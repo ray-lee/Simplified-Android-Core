@@ -1,7 +1,11 @@
 package org.nypl.simplified.ui.accounts
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.UiThread
@@ -62,6 +66,9 @@ class AccountListFragment : Fragment() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    this.configureToolbar()
+
+    setHasOptionsMenu(true)
 
     this.parameters = this.requireArguments()[PARAMETERS_ID] as AccountsFragmentParameters
     this.accountListData = mutableListOf()
@@ -128,10 +135,31 @@ class AccountListFragment : Fragment() {
     return layout
   }
 
+  override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    super.onCreateOptionsMenu(menu, inflater)
+    inflater.inflate(R.menu.account_list, menu)
+  }
+
+  override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    when (item.itemId) {
+      R.id.accountsMenuActionAccountAdd -> {
+        if (this.parameters.shouldShowLibraryRegistryMenu) {
+          item.setOnMenuItemClickListener {
+            this.findNavigationController().openSettingsAccountRegistry()
+            true
+          }
+          item.isVisible = true
+        } else {
+          item.isVisible = false
+        }
+        return true
+      }
+    }
+    return super.onOptionsItemSelected(item)
+  }
+
   override fun onStart() {
     super.onStart()
-
-    this.configureToolbar()
 
     this.accountSubscription =
       this.profilesController.accountEvents()
@@ -155,22 +183,6 @@ class AccountListFragment : Fragment() {
   private fun configureToolbar() {
     val host = this.activity
     if (host is ToolbarHostType) {
-      val toolbar = host.findToolbar()
-
-      host.toolbarClearMenu()
-      toolbar.inflateMenu(R.menu.account_list)
-
-      val accountAdd = toolbar.menu.findItem(R.id.accountsMenuActionAccountAdd)
-      if (this.parameters.shouldShowLibraryRegistryMenu) {
-        accountAdd.setOnMenuItemClickListener {
-          this.findNavigationController().openSettingsAccountRegistry()
-          true
-        }
-        accountAdd.isVisible = true
-      } else {
-        accountAdd.isVisible = false
-      }
-
       host.toolbarSetTitleSubtitle(
         title = this.requireContext().getString(R.string.accounts),
         subtitle = ""

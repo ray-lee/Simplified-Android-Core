@@ -55,14 +55,6 @@ interface ToolbarHostType {
    * A convenience function to clear the toolbar.
    */
 
-  fun toolbarClearMenu() {
-    this.findToolbar().menu.clear()
-  }
-
-  /**
-   * A convenience function to clear the toolbar.
-   */
-
   fun toolbarSetTitleSubtitle(
     title: String,
     subtitle: String

@@ -6,6 +6,9 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.View.TEXT_ALIGNMENT_TEXT_END
 import android.view.ViewGroup
@@ -143,6 +146,7 @@ class CatalogFragmentFeed : Fragment() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    setHasOptionsMenu(true)
 
     this.parameters = this.requireArguments()[this.parametersId] as CatalogFeedArguments
     this.feedWithGroupsData = mutableListOf()
@@ -247,6 +251,24 @@ class CatalogFragmentFeed : Fragment() {
     this.feedWithoutGroups.visibility = View.INVISIBLE
 
     return layout
+  }
+
+  override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    inflater.inflate(R.menu.catalog, menu)
+  }
+
+  override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    when (item.itemId) {
+      R.id.catalogMenuActionSearch -> {
+        this.openSearchDialog(requireContext(), toolbar, search)
+        return true
+      }
+      R.id.catalogMenuActionReload -> {
+        this.feedModel.reloadFeed(this.feedModel.feedState().arguments)
+        return true
+      }
+    }
+    return super.onOptionsItemSelected(item)
   }
 
   override fun onStart() {
@@ -689,46 +711,12 @@ class CatalogFragmentFeed : Fragment() {
     val context = this.requireContext()
     val toolbar = toolbarHost.findToolbar()
     this.configureToolbarTitles(context, toolbar, ownership, title)
-    this.configureToolbarMenu(context, toolbar, search, title)
+    this.activity?.invalidateOptionsMenu()
 
     toolbarHost.toolbarSetBackArrowConditionally(
       context = context,
       shouldArrowBePresent = { this.findNavigationController().backStackSize() > 1 },
       onArrowClicked = { this.findNavigationController().popBackStack() })
-  }
-
-  @UiThread
-  private fun configureToolbarMenu(
-    context: Context,
-    toolbar: Toolbar,
-    search: FeedSearch?,
-    title: String
-  ) {
-    toolbar.menu.clear()
-    toolbar.inflateMenu(R.menu.catalog)
-
-    val menuSearch =
-      toolbar.menu.findItem(R.id.catalogMenuActionSearch)
-    val menuReload =
-      toolbar.menu.findItem(R.id.catalogMenuActionReload)
-
-    if (search != null) {
-      menuSearch.title = context.getString(R.string.catalogSearchIn, title)
-      menuSearch.setOnMenuItemClickListener {
-        this.openSearchDialog(context, toolbar, search)
-        true
-      }
-    } else {
-      menuSearch.isVisible = false
-    }
-
-    menuReload.title = context.getString(R.string.catalogAccessibilityReloadFeed)
-    menuReload.isEnabled = true
-    menuReload.setOnMenuItemClickListener { item ->
-      item.isEnabled = false
-      this.feedModel.reloadFeed(this.feedModel.feedState().arguments)
-      true
-    }
   }
 
   @UiThread

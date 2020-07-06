@@ -44,7 +44,6 @@ class AccountListAdapter(
 
     holder.accountIcon.setImageDrawable(null)
     holder.accountTitleView.text = account.provider.displayName
-    holder.accountSubtitleView.text = account.provider.subtitle
     holder.parent.setOnClickListener {
       this.onItemClicked.invoke(account)
     }
@@ -62,11 +61,9 @@ class AccountListAdapter(
   }
 
   inner class AccountViewHolder(val parent: View) : RecyclerView.ViewHolder(parent) {
-    val accountIcon =
-      parent.findViewById<ImageView>(R.id.accountCellIcon)
-    val accountTitleView =
-      parent.findViewById<TextView>(R.id.accountCellTitle)
-    val accountSubtitleView =
-      parent.findViewById<TextView>(R.id.accountCellSubtitle)
+    val accountIcon: ImageView =
+      parent.findViewById(R.id.accountCellIcon)
+    val accountTitleView: TextView =
+      parent.findViewById(R.id.accountCellTitle)
   }
 }

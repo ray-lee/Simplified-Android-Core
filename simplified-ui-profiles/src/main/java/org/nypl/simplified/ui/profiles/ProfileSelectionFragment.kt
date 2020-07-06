@@ -114,7 +114,6 @@ class ProfileSelectionFragment : Fragment() {
 
     val toolbarHost = this.requireActivity() as ToolbarHostType
     val toolbar = toolbarHost.findToolbar()
-    toolbarHost.toolbarClearMenu()
     toolbarHost.toolbarUnsetArrow()
     toolbar.visibility = View.VISIBLE
     toolbar.setTitle(R.string.profilesTitle)

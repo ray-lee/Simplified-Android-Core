@@ -319,7 +319,6 @@ class SettingsFragmentVersion : Fragment() {
   private fun configureToolbar() {
     val host = this.activity
     if (host is ToolbarHostType) {
-      host.toolbarClearMenu()
       host.toolbarSetTitleSubtitle(
         title = this.requireContext().getString(R.string.settingsVersion),
         subtitle = ""

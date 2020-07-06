@@ -84,7 +84,6 @@ class AccountFragment : Fragment() {
 
   private lateinit var account: AccountType
   private lateinit var accountIcon: ImageView
-  private lateinit var accountSubtitle: TextView
   private lateinit var accountTitle: TextView
   private lateinit var authentication: ViewGroup
   private lateinit var authenticationAlternatives: ViewGroup
@@ -181,8 +180,6 @@ class AccountFragment : Fragment() {
 
     this.accountTitle =
       layout.findViewById(R.id.accountCellTitle)
-    this.accountSubtitle =
-      layout.findViewById(R.id.accountCellSubtitle)
     this.accountIcon =
       layout.findViewById(R.id.accountCellIcon)
 
@@ -404,8 +401,6 @@ class AccountFragment : Fragment() {
 
     this.accountTitle.text =
       this.account.provider.displayName
-    this.accountSubtitle.text =
-      this.account.provider.subtitle
 
     ImageAccountIcons.loadAccountLogoIntoView(
       this.imageLoader.loader,
@@ -599,7 +594,6 @@ class AccountFragment : Fragment() {
   private fun configureToolbar() {
     val host = this.activity
     if (host is ToolbarHostType) {
-      host.toolbarClearMenu()
       host.toolbarSetTitleSubtitle(
         title = this.requireContext().getString(R.string.accounts),
         subtitle = this.account.provider.displayName

@@ -2,6 +2,9 @@ package org.nypl.simplified.ui.accounts
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -52,8 +55,6 @@ class AccountRegistryFragment : Fragment() {
   private lateinit var profilesController: ProfilesControllerType
   private lateinit var progress: ProgressBar
   private lateinit var progressText: TextView
-  private lateinit var refresh: Button
-  private lateinit var title: TextView
   private lateinit var uiThread: UIThreadServiceType
   private val logger = LoggerFactory.getLogger(AccountRegistryFragment::class.java)
   private var accountCreationSubscription: Disposable? = null
@@ -61,6 +62,9 @@ class AccountRegistryFragment : Fragment() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    this.configureToolbar()
+
+    setHasOptionsMenu(true)
 
     val services = Services.serviceDirectory()
 
@@ -133,9 +137,7 @@ class AccountRegistryFragment : Fragment() {
 
     this.logger.debug("selected account: {} ({})", account.id, account.title)
 
-    this.refresh.isEnabled = false
     this.accountList.visibility = View.INVISIBLE
-    this.title.setText(R.string.accountRegistryCreating)
     this.progressText.text = ""
     this.progress.visibility = View.VISIBLE
 
@@ -176,10 +178,6 @@ class AccountRegistryFragment : Fragment() {
     val layout =
       inflater.inflate(R.layout.account_registry, container, false)
 
-    this.refresh =
-      layout.findViewById(R.id.accountRegistryRefreshButton)
-    this.title =
-      layout.findViewById(R.id.accountRegistryTitle)
     this.progress =
       layout.findViewById(R.id.accountRegistryProgress)
     this.progressText =
@@ -190,32 +188,38 @@ class AccountRegistryFragment : Fragment() {
     this.accountList.setHasFixedSize(true)
     this.accountList.layoutManager = LinearLayoutManager(this.context)
     this.accountList.adapter = this.accountListAdapter
-    (this.accountList.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
-
-    this.refresh.setOnClickListener {
-      this.refresh.isEnabled = false
-
-      this.backgroundExecutor.execute {
-        try {
-          this.accountRegistry.refresh(
-            includeTestingLibraries = this.profilesController
-              .profileCurrent()
-              .preferences()
-              .showTestingLibraries
-          )
-        } catch (e: Exception) {
-          this.logger.error("failed to refresh registry: ", e)
-        }
-      }
-    }
 
     return layout
   }
 
+  override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    super.onCreateOptionsMenu(menu, inflater)
+    inflater.inflate(R.menu.account_registry, menu)
+  }
+
+  override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    when (item.itemId) {
+      R.id.accountsMenuActionRefresh -> {
+        this.backgroundExecutor.execute {
+          try {
+            this.accountRegistry.refresh(
+              includeTestingLibraries = this.profilesController
+                .profileCurrent()
+                .preferences()
+                .showTestingLibraries
+            )
+          } catch (e: Exception) {
+            this.logger.error("failed to refresh registry: ", e)
+          }
+        }
+        return true
+      }
+    }
+    return super.onOptionsItemSelected(item)
+  }
+
   override fun onStart() {
     super.onStart()
-
-    this.configureToolbar()
 
     this.backgroundExecutor =
       NamedThreadPools.namedThreadPool(1, "simplified-registry-io", 19)
@@ -246,7 +250,6 @@ class AccountRegistryFragment : Fragment() {
   private fun configureToolbar() {
     val host = this.activity
     if (host is ToolbarHostType) {
-      host.toolbarClearMenu()
       host.toolbarSetTitleSubtitle(
         title = this.requireContext().getString(R.string.accounts),
         subtitle = ""
@@ -284,10 +287,8 @@ class AccountRegistryFragment : Fragment() {
 
     return when (status) {
       AccountProviderRegistryStatus.Idle -> {
-        this.title.setText(R.string.accountRegistrySelect)
         this.accountList.visibility = View.VISIBLE
         this.progress.visibility = View.INVISIBLE
-        this.refresh.isEnabled = true
 
         val availableDescriptions =
           this.determineAvailableAccountProviderDescriptions()
@@ -305,12 +306,10 @@ class AccountRegistryFragment : Fragment() {
       }
 
       AccountProviderRegistryStatus.Refreshing -> {
-        this.title.setText(R.string.accountRegistrySelect)
         this.accountList.visibility = View.INVISIBLE
         this.progress.visibility = View.VISIBLE
         this.progressText.visibility = View.VISIBLE
         this.progressText.setText(R.string.accountRegistryRetrieving)
-        this.refresh.isEnabled = false
       }
     }
   }

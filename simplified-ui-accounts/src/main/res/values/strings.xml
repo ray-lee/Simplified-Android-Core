@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-
 <resources>
-  <string name="accountAdd">Add account…</string>
+  <string name="accountAdd">Add account&#8230;</string>
   <string name="accountCancel">Cancel</string>
   <string name="accountCardCreatorLabel">Don\'t have a library card?</string>
   <string name="accountCardCreatorSignUp">Create Card</string>
@@ -22,12 +21,12 @@
   <string name="accountPassword">Password</string>
   <string name="accountPasswordShow">Show password</string>
   <string name="accountPlaceholder">Lorem ipsum dolor sit amet, probatus volutpat has at, vis adhuc iuvaret omittantur an, sadipscing conclusionemque his ad. Eam ut simul tempor. Primis consetetur appellantur vim eu, eum an iudico dolorum. Ad vis utamur honestatis, sanctus debitis referrentur an eam.</string>
-  <string name="accountRegistryCreating">Creating an account…</string>
+  <string name="accountRegistryCreating">Creating an account&#8230;</string>
   <string name="accountRegistryEmpty">No accounts are available.</string>
   <string name="accountRegistryRefresh">Refresh</string>
-  <string name="accountRegistryRetrieving">Retrieving accounts from registry…</string>
-  <string name="accountRegistrySelect">Please select a library…</string>
-  <string name="accountReportIssue">Report an issue…</string>
+  <string name="accountRegistryRetrieving">Retrieving accounts from registry&#8230;</string>
+  <string name="accountRegistrySelect">Please select a library&#8230;</string>
+  <string name="accountReportIssue">Report an issue&#8230;</string>
   <string name="accounts">Accounts</string>
   <string name="accountsDelete">@string/accountDelete</string>
   <string name="accountsDeleteConfirm">Are you sure you want to remove your \"%1$s\" account from this device?</string>
@@ -37,4 +36,5 @@
   <string name="accountsDetails">Details</string>
   <string name="accountSyncBookmarks">Sync bookmarks</string>
   <string name="accountUserName">User Name</string>
+  <string name="refresh">Refresh</string>
 </resources>

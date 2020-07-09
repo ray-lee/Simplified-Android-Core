@@ -135,7 +135,7 @@ class SettingsAccountActivity : AppCompatActivity(), ServiceDirectoryProviderTyp
         AccountFragmentParameters(
           accountId = this.account.id,
           closeOnLoginSuccess = false,
-          showPleaseLogInTitle = false
+          showPleaseLogInTitle = true
         )
       )
 
@@ -229,7 +229,7 @@ class SettingsAccountActivity : AppCompatActivity(), ServiceDirectoryProviderTyp
 
     this.executor.scheduleAtFixedRate(
       {
-        // this.cycleStates(uiThread)
+        this.cycleStates(uiThread)
       },
       1L,
       1L,

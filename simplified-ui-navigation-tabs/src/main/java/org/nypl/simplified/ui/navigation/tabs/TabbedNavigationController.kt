@@ -28,6 +28,8 @@ import org.nypl.simplified.ui.accounts.AccountFragmentParameters
 import org.nypl.simplified.ui.accounts.AccountRegistryFragment
 import org.nypl.simplified.ui.accounts.AccountsFragment
 import org.nypl.simplified.ui.accounts.AccountsFragmentParameters
+import org.nypl.simplified.ui.accounts.saml20.AccountSAML20Fragment
+import org.nypl.simplified.ui.accounts.saml20.AccountSAML20FragmentParameters
 import org.nypl.simplified.ui.catalog.CatalogFeedArguments
 import org.nypl.simplified.ui.catalog.CatalogFeedArguments.CatalogFeedArgumentsLocalBooks
 import org.nypl.simplified.ui.catalog.CatalogFeedOwnership
@@ -331,6 +333,13 @@ class TabbedNavigationController private constructor(
     this.navigator.addFragment(
       fragment = AccountFragment.create(parameters),
       tab = R.id.tabSettings
+    )
+  }
+
+  override fun openSAML20Login(parameters: AccountSAML20FragmentParameters) {
+    this.navigator.addFragment(
+      fragment = AccountSAML20Fragment.create(parameters),
+      tab = this.navigator.currentTab()
     )
   }
 

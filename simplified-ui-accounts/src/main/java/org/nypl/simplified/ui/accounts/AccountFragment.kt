@@ -62,6 +62,7 @@ import org.nypl.simplified.ui.accounts.AccountLoginButtonStatus.AsLoginButtonDis
 import org.nypl.simplified.ui.accounts.AccountLoginButtonStatus.AsLoginButtonEnabled
 import org.nypl.simplified.ui.accounts.AccountLoginButtonStatus.AsLogoutButtonDisabled
 import org.nypl.simplified.ui.accounts.AccountLoginButtonStatus.AsLogoutButtonEnabled
+import org.nypl.simplified.ui.accounts.saml20.AccountSAML20FragmentParameters
 import org.nypl.simplified.ui.errorpage.ErrorPageParameters
 import org.nypl.simplified.ui.images.ImageAccountIcons
 import org.nypl.simplified.ui.images.ImageLoaderType
@@ -488,6 +489,10 @@ class AccountFragment : Fragment() {
     authenticationDescription: AccountProviderAuthenticationDescription.SAML2_0
   ) {
     this.viewModel.loginExplicitlyRequested = true
+    this.findNavigationController()
+      .openSAML20Login(AccountSAML20FragmentParameters(
+        authenticationURI = authenticationDescription.authenticate
+      ))
   }
 
   private fun onTryOAuthLogin(

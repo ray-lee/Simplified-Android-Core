@@ -2,6 +2,7 @@ package org.nypl.simplified.ui.accounts
 
 import com.io7m.junreachable.UnreachableCodeException
 import org.nypl.simplified.presentableerror.api.PresentableErrorType
+import org.nypl.simplified.ui.accounts.saml20.AccountSAML20FragmentParameters
 import org.nypl.simplified.ui.errorpage.ErrorPageParameters
 
 /**
@@ -10,6 +11,10 @@ import org.nypl.simplified.ui.errorpage.ErrorPageParameters
 
 open class AccountNavigationControllerUnreachable : AccountNavigationControllerType {
   override fun openSettingsAccount(parameters: AccountFragmentParameters) {
+    throw UnreachableCodeException()
+  }
+
+  override fun openSAML20Login(parameters: AccountSAML20FragmentParameters) {
     throw UnreachableCodeException()
   }
 

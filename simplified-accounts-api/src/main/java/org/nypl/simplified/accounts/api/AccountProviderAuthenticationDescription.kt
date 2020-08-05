@@ -1,13 +1,14 @@
 package org.nypl.simplified.accounts.api
 
 import com.google.common.base.Preconditions
+import java.io.Serializable
 import java.net.URI
 
 /**
  * A description of the details of authentication.
  */
 
-sealed class AccountProviderAuthenticationDescription {
+sealed class AccountProviderAuthenticationDescription : Serializable {
 
   companion object {
 

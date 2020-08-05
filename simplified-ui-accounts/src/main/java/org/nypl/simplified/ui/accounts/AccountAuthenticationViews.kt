@@ -116,8 +116,10 @@ class AccountAuthenticationViews(
         this.oAuthWithIntermediary.viewGroup.visibility = VISIBLE
       Anonymous ->
         this.anonymous.viewGroup.visibility = VISIBLE
-      is SAML2_0 ->
+      is SAML2_0 -> {
         this.saml20.viewGroup.visibility = VISIBLE
+        this.saml20.configureFor(description)
+      }
     }
   }
 

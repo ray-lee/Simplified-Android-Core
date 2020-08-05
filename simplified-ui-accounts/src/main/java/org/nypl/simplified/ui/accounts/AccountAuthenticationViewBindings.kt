@@ -10,6 +10,7 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.TextView.BufferType.EDITABLE
 import org.nypl.simplified.accounts.api.AccountPassword
+import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.Basic
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.KeyboardInput.DEFAULT
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.KeyboardInput.EMAIL_ADDRESS
@@ -261,8 +262,16 @@ sealed class AccountAuthenticationViewBindings {
   }
 
   class ViewsForSAML2_0(
-    override val viewGroup: ViewGroup
+    override val viewGroup: ViewGroup,
+    private val loginButton: Button
   ) : Base() {
+
+    private var loginText =
+      this.viewGroup.resources.getString(R.string.accountLogin)
+    private val logoutText =
+      this.viewGroup.resources.getString(R.string.accountLogout)
+    private val cancelText =
+      this.viewGroup.resources.getString(R.string.accountCancel)
 
     override fun lock() {
       // Nothing
@@ -273,16 +282,54 @@ sealed class AccountAuthenticationViewBindings {
     }
 
     override fun setLoginButtonStatus(status: AccountLoginButtonStatus) {
-      // Nothing
+      return when (status) {
+        is AsLoginButtonEnabled -> {
+          this.loginButton.isEnabled = true
+          this.loginButton.text = this.loginText
+          this.loginButton.setOnClickListener { status.onClick.invoke() }
+        }
+        AsLoginButtonDisabled -> {
+          this.loginButton.isEnabled = false
+          this.loginButton.text = this.loginText
+        }
+        is AsCancelButtonEnabled -> {
+          this.loginButton.isEnabled = true
+          this.loginButton.text = this.cancelText
+          this.loginButton.setOnClickListener { status.onClick.invoke() }
+        }
+        is AsLogoutButtonEnabled -> {
+          this.loginButton.isEnabled = true
+          this.loginButton.text = this.logoutText
+          this.loginButton.setOnClickListener { status.onClick.invoke() }
+        }
+        AsLogoutButtonDisabled -> {
+          this.loginButton.isEnabled = false
+          this.loginButton.text = this.logoutText
+        }
+        AsCancelButtonDisabled -> {
+          this.loginButton.isEnabled = false
+          this.loginButton.text = this.cancelText
+        }
+      }
     }
 
     override fun clearActual() {
       // Nothing
     }
 
+    fun configureFor(description: AccountProviderAuthenticationDescription.SAML2_0) {
+      this.loginText =
+        this.viewGroup.context.resources.getString(
+          R.string.accountLoginWith, description.description)
+      this.loginButton.text = this.loginText
+    }
+
     companion object {
       fun bind(viewGroup: ViewGroup): ViewsForSAML2_0 {
-        return ViewsForSAML2_0(viewGroup)
+        return ViewsForSAML2_0(
+          viewGroup = viewGroup,
+          loginButton = viewGroup.findViewById(R.id.authSAMLLogin)
+        )
       }
     }
   }

@@ -16,7 +16,6 @@ import org.nypl.simplified.accounts.api.AccountUsername
 import org.nypl.simplified.accounts.json.AccountAuthenticationCredentialsJSON
 import org.nypl.simplified.accounts.json.AccountAuthenticationCredentialsJSON.deserializeFromJSON
 import org.nypl.simplified.accounts.json.AccountAuthenticationCredentialsJSON.serializeToJSON
-import org.slf4j.LoggerFactory
 import java.net.URI
 
 /**
@@ -109,9 +108,32 @@ abstract class AccountAuthenticationCredentialsJSONContract {
     Assert.assertEquals(creds0, creds1)
   }
 
-  companion object {
-    private val LOG = LoggerFactory.getLogger(
-      AccountAuthenticationCredentialsJSONContract::class.java
-    )
+  @Test
+  @Throws(Exception::class)
+  fun testRoundTrip4() {
+    val post =
+      AccountAuthenticationAdobePostActivationCredentials(
+        deviceID = AdobeDeviceID("device"),
+        userID = AdobeUserID("user")
+      )
+    val adobe =
+      AccountAuthenticationAdobePreActivationCredentials(
+        vendorID = AdobeVendorID("vendor"),
+        clientToken = AccountAuthenticationAdobeClientToken.parse("NYNYPL|156|5e0cdf28-e3a2-11e7-ab18-0e26ed4612aa|LEcBeSV"),
+        deviceManagerURI = URI.create("http://example.com"),
+        postActivationCredentials = post
+      )
+
+    val creds0: AccountAuthenticationCredentials =
+      AccountAuthenticationCredentials.SAML2_0(
+        accessToken = "76885cd7-f2e9-4930-a9a1-1ea8f1093ed9",
+        adobeCredentials = adobe,
+        authenticationDescription = "fake",
+        patronInfo = "{}",
+        cookies = setOf("cookie0=23; cookie1=24", "cookie2=25")
+      )
+
+    val creds1 = deserializeFromJSON(serializeToJSON(creds0))
+    Assert.assertEquals(creds0, creds1)
   }
 }

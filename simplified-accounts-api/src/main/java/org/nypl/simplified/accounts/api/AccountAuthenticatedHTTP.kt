@@ -30,6 +30,8 @@ object AccountAuthenticatedHTTP {
 
       is AccountAuthenticationCredentials.OAuthWithIntermediary ->
         HTTPAuthOAuth.create(HTTPOAuthToken.create(credentials.accessToken))
+      is AccountAuthenticationCredentials.SAML2_0 ->
+        HTTPAuthOAuth.create(HTTPOAuthToken.create(credentials.accessToken))
     }
   }
 

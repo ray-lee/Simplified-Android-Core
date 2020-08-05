@@ -134,6 +134,11 @@ class MainActivity :
               taskRecorder.currentStepFailed(message, AccountLoginMissingInformation(message))
               return taskRecorder.finishFailure()
             }
+            is AccountAuthenticationCredentials.SAML2_0 -> {
+              val message = "Can't use SAML 2.0 authentication during migrations."
+              taskRecorder.currentStepFailed(message, AccountLoginMissingInformation(message))
+              return taskRecorder.finishFailure()
+            }
           }
         }
         is AccountProviderAuthenticationDescription.OAuthWithIntermediary -> {

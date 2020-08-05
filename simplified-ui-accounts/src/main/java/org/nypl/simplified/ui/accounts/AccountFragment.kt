@@ -50,6 +50,7 @@ import org.nypl.simplified.presentableerror.api.PresentableErrorType
 import org.nypl.simplified.profiles.api.ProfileDateOfBirth
 import org.nypl.simplified.profiles.api.ProfileEvent
 import org.nypl.simplified.profiles.api.ProfileUpdated
+import org.nypl.simplified.profiles.controller.api.ProfileAccountLoginRequest
 import org.nypl.simplified.profiles.controller.api.ProfileAccountLoginRequest.Basic
 import org.nypl.simplified.profiles.controller.api.ProfileAccountLoginRequest.OAuthWithIntermediaryCancel
 import org.nypl.simplified.profiles.controller.api.ProfileAccountLoginRequest.OAuthWithIntermediaryInitiate
@@ -417,6 +418,8 @@ class AccountFragment : Fragment() {
           this.logger.warn("Basic authentication is not currently supported as an alternative.")
         AccountProviderAuthenticationDescription.Anonymous ->
           this.logger.warn("Anonymous authentication makes no sense as an alternative.")
+        is AccountProviderAuthenticationDescription.SAML2_0 ->
+          this.logger.warn("SAML 2.0 is not currently supported as an alternative.")
 
         is AccountProviderAuthenticationDescription.OAuthWithIntermediary -> {
           val layout =
@@ -434,27 +437,6 @@ class AccountFragment : Fragment() {
             logoURI = alternative.logoURI,
             onClick = {
               this.onTryOAuthLogin(alternative)
-            }
-          )
-          this.authenticationAlternativesButtons.addView(layout)
-        }
-
-        is AccountProviderAuthenticationDescription.SAML2_0 -> {
-          val layout =
-            this.layoutInflater.inflate(
-              R.layout.auth_saml,
-              this.authenticationAlternativesButtons,
-              false
-            )
-
-          this.configureImageButton(
-            container = layout.findViewById(R.id.authSAMLLogo),
-            buttonText = layout.findViewById(R.id.authSAMLLogoText),
-            buttonImage = layout.findViewById(R.id.authSAMLLogoImage),
-            text = this.getString(R.string.accountLoginWith, alternative.description),
-            logoURI = alternative.logoURI,
-            onClick = {
-              this.onTrySAML2Login(alternative)
             }
           )
           this.authenticationAlternativesButtons.addView(layout)
@@ -489,9 +471,17 @@ class AccountFragment : Fragment() {
     authenticationDescription: AccountProviderAuthenticationDescription.SAML2_0
   ) {
     this.viewModel.loginExplicitlyRequested = true
+    this.profilesController.profileAccountLogin(
+      ProfileAccountLoginRequest.SAML20Initiate(
+        accountId = this.account.id,
+        description = authenticationDescription
+      )
+    )
+
     this.findNavigationController()
       .openSAML20Login(AccountSAML20FragmentParameters(
-        authenticationURI = authenticationDescription.authenticate
+        accountID = this.account.id,
+        authenticationDescription = authenticationDescription
       ))
   }
 

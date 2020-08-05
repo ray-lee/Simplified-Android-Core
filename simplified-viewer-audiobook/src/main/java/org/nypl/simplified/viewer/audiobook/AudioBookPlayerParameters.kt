@@ -89,6 +89,8 @@ data class AudioBookPlayerParameters(
           )
         is AccountAuthenticationCredentials.OAuthWithIntermediary ->
           AudioBookCredentials.BearerToken(credentials.accessToken)
+        is AccountAuthenticationCredentials.SAML2_0 ->
+          AudioBookCredentials.BearerToken(credentials.accessToken)
         null ->
           null
       }

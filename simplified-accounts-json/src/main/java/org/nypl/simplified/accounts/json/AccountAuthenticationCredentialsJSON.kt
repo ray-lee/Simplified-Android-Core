@@ -2,6 +2,7 @@ package org.nypl.simplified.accounts.json
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.io7m.jfunctional.Some
 import org.nypl.drm.core.AdobeDeviceID
@@ -15,12 +16,16 @@ import org.nypl.simplified.accounts.api.AccountPassword
 import org.nypl.simplified.accounts.api.AccountUsername
 import org.nypl.simplified.json.core.JSONParseException
 import org.nypl.simplified.json.core.JSONParserUtilities
+import org.slf4j.LoggerFactory
 
 /**
  * Functions for serializing/deserializing account credentials.
  */
 
 object AccountAuthenticationCredentialsJSON {
+
+  private val logger =
+    LoggerFactory.getLogger(AccountAuthenticationCredentialsJSON::class.java)
 
   /**
    * The version number that will be inferred if no version number is present.
@@ -32,7 +37,7 @@ object AccountAuthenticationCredentialsJSON {
    * The current supported version.
    */
 
-  private const val currentSupportedVersion = 20200604
+  private const val currentSupportedVersion = 20200805
 
   /**
    * Serialize the given credentials to a JSON object.
@@ -50,7 +55,7 @@ object AccountAuthenticationCredentialsJSON {
     authObject.put("@version", this.currentSupportedVersion)
     authObject.put("authenticationDescription", credentials.authenticationDescription)
 
-    when (credentials) {
+    val ignored = when (credentials) {
       is AccountAuthenticationCredentials.Basic -> {
         authObject.put("@type", "basic")
         authObject.put("username", credentials.userName.value)
@@ -59,6 +64,17 @@ object AccountAuthenticationCredentialsJSON {
       is AccountAuthenticationCredentials.OAuthWithIntermediary -> {
         authObject.put("@type", "oauthWithIntermediary")
         authObject.put("accessToken", credentials.accessToken)
+      }
+      is AccountAuthenticationCredentials.SAML2_0 -> {
+        authObject.put("@type", "saml2_0")
+        authObject.put("accessToken", credentials.accessToken)
+        authObject.put("patronInfo", credentials.patronInfo)
+
+        val cookieArray = objectMapper.createArrayNode()
+        for (cookie in credentials.cookies) {
+          cookieArray.add(cookie)
+        }
+        authObject.set("cookies", cookieArray)
       }
     }
 
@@ -117,15 +133,58 @@ object AccountAuthenticationCredentialsJSON {
         this.deserialize20190424(obj)
       20200604 ->
         this.deserialize20200604(obj)
+      20200805 ->
+        this.deserialize20200805(obj)
       else ->
         throw JSONParseException("Unsupported version $version")
     }
+  }
+
+  private fun deserialize20200805(obj: ObjectNode): AccountAuthenticationCredentials {
+    this.logger.debug("deserializing version 20200805")
+
+    return when (val type = JSONParserUtilities.getString(obj, "@type")) {
+      "basic" ->
+        this.deserialize20200604Basic(obj)
+      "oauthWithIntermediary" ->
+        this.deserialize20200604OAuthWithIntermediary(obj)
+      "saml2_0" ->
+        this.deserialize2020805SAML2_0(obj)
+      else ->
+        throw JSONParseException("Unrecognized type: $type")
+    }
+  }
+
+  private fun deserialize2020805SAML2_0(obj: ObjectNode): AccountAuthenticationCredentials {
+    val adobeCredentials =
+      JSONParserUtilities.getObjectOrNull(obj, "adobe_credentials")
+        ?.let(this::deserializeAdobeCredentials)
+
+    return AccountAuthenticationCredentials.SAML2_0(
+      accessToken = JSONParserUtilities.getString(obj, "accessToken"),
+      adobeCredentials = adobeCredentials,
+      authenticationDescription = JSONParserUtilities.getStringOrNull(obj, "authenticationDescription"),
+      patronInfo = JSONParserUtilities.getString(obj, "patronInfo"),
+      cookies = deserializeStringArray(JSONParserUtilities.getArray(obj, "cookies"))
+    )
+  }
+
+  private fun deserializeStringArray(
+    array: ArrayNode
+  ): Set<String> {
+    val results = mutableSetOf<String>()
+    for (index in 0 until array.size()) {
+      results.add(JSONParserUtilities.checkString(array[index]))
+    }
+    return results.toSet()
   }
 
   @Throws(JSONParseException::class)
   private fun deserialize20200604(
     obj: ObjectNode
   ): AccountAuthenticationCredentials {
+    this.logger.debug("deserializing version 20200604")
+
     return when (val type = JSONParserUtilities.getString(obj, "@type")) {
       "basic" ->
         this.deserialize20200604Basic(obj)
@@ -169,6 +228,8 @@ object AccountAuthenticationCredentialsJSON {
   private fun deserialize20190424(
     obj: ObjectNode
   ): AccountAuthenticationCredentials {
+    this.logger.debug("deserializing version 20190424")
+
     val user =
       AccountUsername(JSONParserUtilities.getString(obj, "username"))
     val pass =

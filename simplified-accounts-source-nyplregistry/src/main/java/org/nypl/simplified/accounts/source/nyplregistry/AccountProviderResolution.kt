@@ -11,6 +11,7 @@ import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.Companion.BASIC_TYPE
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.Companion.COPPA_TYPE
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.Companion.OAUTH_INTERMEDIARY_TYPE
+import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.Companion.SAML_2_0_TYPE
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.KeyboardInput
 import org.nypl.simplified.accounts.api.AccountProviderDescription
 import org.nypl.simplified.accounts.api.AccountProviderResolutionErrorDetails
@@ -225,6 +226,10 @@ class AccountProviderResolution(
           authObjects.add(AccountProviderAuthenticationDescription.Anonymous)
           break@accumulateAuthentications
         }
+        SAML_2_0_TYPE -> {
+          authObjects.add(
+            this.extractAuthenticationDescriptionSAML20(taskRecorder, authObject))
+        }
         else -> {
           this.logger.warn("encountered unrecognized authentication type: {}", authType)
         }
@@ -243,6 +248,33 @@ class AccountProviderResolution(
       accountProviderID = this.description.id.toASCIIString()
     ))
     throw IOException(message)
+  }
+
+  private fun extractAuthenticationDescriptionSAML20(
+    taskRecorder: TaskRecorderType<AccountProviderResolutionErrorDetails>,
+    authObject: AuthenticationObject
+  ): AccountProviderAuthenticationDescription {
+    val authenticate =
+      authObject.links.find { link -> link.relation == "authenticate" }
+    val logo =
+      authObject.links.find { link -> link.relation == "logo" }
+
+    val authenticateURI = authenticate?.hrefURI
+    if (authenticateURI == null) {
+      val message = this.stringResources.resolvingAuthDocumentSAML20Malformed
+      taskRecorder.currentStepFailed(message, AuthDocumentUnusable(
+        message = message,
+        accountProviderID = this.description.id.toASCIIString(),
+        accountProviderTitle = this.description.title
+      ))
+      throw IOException(message)
+    }
+
+    return AccountProviderAuthenticationDescription.SAML2_0(
+      authenticate = authenticateURI,
+      description = authObject.description,
+      logoURI = logo?.hrefURI
+    )
   }
 
   private fun extractAuthenticationDescriptionOAuthIntermediary(

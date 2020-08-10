@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputType
 import android.text.method.PasswordTransformationMethod
 import android.view.LayoutInflater
 import android.view.View
@@ -681,13 +682,11 @@ class AccountFragment : Fragment() {
         this.authenticationBasic.visibility = View.VISIBLE
 
         /*
-         * Configure the presence of the individual fields based on keyboard input values
+         * Configure the presence and type of the individual fields based on keyboard input values
          * given in the authentication document.
-         *
-         * TODO: Add the extra input validation for the more precise types such as NUMBER_PAD.
          */
 
-        when (auth.keyboard) {
+        when (val keyboard = auth.keyboard) {
           KeyboardInput.NO_INPUT -> {
             this.authenticationBasicUserLabel.visibility = View.GONE
             this.authenticationBasicUser.visibility = View.GONE
@@ -697,10 +696,19 @@ class AccountFragment : Fragment() {
           KeyboardInput.NUMBER_PAD -> {
             this.authenticationBasicUserLabel.visibility = View.VISIBLE
             this.authenticationBasicUser.visibility = View.VISIBLE
+
+            this.authenticationBasicUser.inputType = when (keyboard) {
+              KeyboardInput.EMAIL_ADDRESS ->
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+              KeyboardInput.NUMBER_PAD ->
+                InputType.TYPE_CLASS_NUMBER
+              else ->
+                InputType.TYPE_CLASS_TEXT
+            }
           }
         }
 
-        when (auth.passwordKeyboard) {
+        when (val keyboard = auth.passwordKeyboard) {
           KeyboardInput.NO_INPUT -> {
             this.authenticationBasicPassLabel.visibility = View.GONE
             this.authenticationBasicPass.visibility = View.GONE
@@ -712,6 +720,20 @@ class AccountFragment : Fragment() {
             this.authenticationBasicPassLabel.visibility = View.VISIBLE
             this.authenticationBasicPass.visibility = View.VISIBLE
             this.authenticationBasicShowPass.visibility = View.VISIBLE
+
+            this.authenticationBasicPass.inputType = when (keyboard) {
+              /*
+               * There is no separate case for KeyboardInput.EMAIL_ADDRESS. It's tempting to use
+               * TYPE_TEXT_VARIATION_EMAIL_ADDRESS together with TYPE_TEXT_VARIATION_PASSWORD, but
+               * that seems to result in neither taking effect, so EMAIL_ADDRESS is treated like
+               * DEFAULT.
+               */
+
+              KeyboardInput.NUMBER_PAD ->
+                InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+              else ->
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
           }
         }
 

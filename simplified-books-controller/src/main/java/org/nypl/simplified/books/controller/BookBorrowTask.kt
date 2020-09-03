@@ -29,9 +29,11 @@ import org.nypl.simplified.accounts.database.api.AccountType
 import org.nypl.simplified.adobe.extensions.AdobeDRMExtensions
 import org.nypl.simplified.adobe.extensions.AdobeDRMExtensions.AdobeDRMFulfillmentException
 import org.nypl.simplified.books.api.Book
+import org.nypl.simplified.books.api.BookDRMKind
 import org.nypl.simplified.books.api.BookID
 import org.nypl.simplified.books.audio.AudioBookCredentials
 import org.nypl.simplified.books.audio.AudioBookManifestRequest
+import org.nypl.simplified.books.book_database.api.BookDRMInformationHandle
 import org.nypl.simplified.books.book_database.api.BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandleAudioBook
 import org.nypl.simplified.books.book_database.api.BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandleEPUB
 import org.nypl.simplified.books.book_database.api.BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandlePDF
@@ -63,6 +65,7 @@ import org.nypl.simplified.books.bundled.api.BundledURIs
 import org.nypl.simplified.books.controller.BookBorrowTask.DownloadResult.DownloadCancelled
 import org.nypl.simplified.books.controller.BookBorrowTask.DownloadResult.DownloadFailed
 import org.nypl.simplified.books.controller.BookBorrowTask.DownloadResult.DownloadOK
+import org.nypl.simplified.books.controller.BookCoverFetchTask.Type
 import org.nypl.simplified.books.controller.api.BookBorrowExceptionBadBorrowFeed
 import org.nypl.simplified.books.controller.api.BookBorrowExceptionDeviceNotActivated
 import org.nypl.simplified.books.controller.api.BookBorrowExceptionNoCredentials
@@ -107,7 +110,6 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
-import java.lang.IllegalStateException
 import java.net.URI
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
@@ -169,6 +171,9 @@ class BookBorrowTask(
 
   @Volatile
   private lateinit var fulfillURI: URI
+
+  @Volatile
+  private var drmKind = BookDRMKind.NONE
 
   /**
    * The initial book value. Note that this is a synthesized value because we need to be
@@ -761,11 +766,12 @@ class BookBorrowTask(
     this.steps.beginNewStep(this.services.borrowStrings.borrowBookFetchingCover)
     this.debug("fetching cover")
 
-    return when (val result =
+    when (val result =
       BookCoverFetchTask(
         services = this.services,
         databaseEntry = this.databaseEntry,
         feedEntry = opdsEntry,
+        type = Type.COVER,
         httpAuth = httpAuth
       ).call()) {
       is TaskResult.Success -> {
@@ -774,6 +780,27 @@ class BookBorrowTask(
       }
       is TaskResult.Failure -> {
         this.debug("failed to fetch cover")
+        this.steps.addAll(result.steps)
+      }
+    }
+
+    this.steps.beginNewStep(this.services.borrowStrings.borrowBookFetchingCover)
+    this.debug("fetching thumbnail")
+
+    when (val result =
+      BookCoverFetchTask(
+        services = this.services,
+        databaseEntry = this.databaseEntry,
+        feedEntry = opdsEntry,
+        type = Type.THUMBNAIL,
+        httpAuth = httpAuth
+      ).call()) {
+      is TaskResult.Success -> {
+        this.debug("fetched thumbnail successfully")
+        this.steps.addAll(result.steps)
+      }
+      is TaskResult.Failure -> {
+        this.debug("failed to fetch thumbnail")
         this.steps.addAll(result.steps)
       }
     }
@@ -1112,10 +1139,22 @@ class BookBorrowTask(
     }
 
     return if (formatHandle != null) {
+      formatHandle.setDRMKind(this.drmKind)
+
+      when (val drmHandle = formatHandle.drmInformationHandle) {
+        is BookDRMInformationHandle.ACSHandle -> {
+          drmHandle.setAdobeRightsInformation(this.adobeLoan)
+          Unit
+        }
+        is BookDRMInformationHandle.LCPHandle,
+        is BookDRMInformationHandle.NoneHandle -> {
+          // Nothing required
+        }
+      }
+
       when (formatHandle) {
         is BookDatabaseEntryFormatHandleEPUB -> {
           formatHandle.copyInBook(file)
-          formatHandle.setAdobeRightsInformation(this.adobeLoan)
           updateStatus()
         }
         is BookDatabaseEntryFormatHandlePDF -> {
@@ -1163,16 +1202,27 @@ class BookBorrowTask(
     )
 
     /*
-     * SIMPLY-2928: Overdrive may return a type of 'application/json' instead of
-     *   the expected 'application/vnd.overdrive.circulation.api+json' type. Handle this
-     *   as an override.
+     * Attempt to find our received type in our set of expected types.
      */
 
-    val isOverdrive = expectedContentTypes
-      .intersect(BookFormats.audioBookOverdriveMimeTypes())
+    for (expectedContentType in expectedContentTypes) {
+      if (expectedContentType.fullType == receivedContentType.fullType) {
+        return receivedContentType
+      }
+    }
+
+    /*
+     * Handle the 'application/json' type as an exception.
+     *
+     * SIMPLY-2928: Overdrive may return 'application/json' instead of
+     * the expected 'application/vnd.overdrive.circulation.api+json' type.
+     */
+
+    val isAudiobook = expectedContentTypes
+      .intersect(BookFormats.audioBookMimeTypes())
       .isNotEmpty()
 
-    if (isOverdrive) {
+    if (isAudiobook) {
       when (receivedContentType.fullType) {
         this.contentTypeJson.fullType -> {
           this.debug(
@@ -1188,7 +1238,7 @@ class BookBorrowTask(
     }
 
     /*
-     * Handle the type 'application/octet-stream' as an override.
+     * Handle the 'application/octet-stream' type as an exception.
      */
 
     if (receivedContentType == this.contentTypeOctetStream) {
@@ -1202,11 +1252,9 @@ class BookBorrowTask(
       return expectedContentTypes.first()
     }
 
-    for (expectedContentType in expectedContentTypes) {
-      if (expectedContentType.fullType == receivedContentType.fullType) {
-        return receivedContentType
-      }
-    }
+    /*
+     * No match found!
+     */
 
     this.debug(
       "expected {} but received {} (unacceptable)",
@@ -1268,6 +1316,7 @@ class BookBorrowTask(
       unconditional = true
     )
 
+    this.drmKind = BookDRMKind.ACS
     val adept = this.services.adobeDRM
     return if (adept != null) {
       this.debug("DRM support is available, using DRM connector")

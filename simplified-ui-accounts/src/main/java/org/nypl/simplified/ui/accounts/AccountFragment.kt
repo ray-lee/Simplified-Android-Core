@@ -769,19 +769,47 @@ class AccountFragment : Fragment() {
     this.authenticationViews.setLoginButtonStatus(status)
 
     return when (status) {
-      is AsLoginButtonEnabled,
-      AsLoginButtonDisabled -> {
+      is AsLoginButtonEnabled -> {
         this.signUpLabel.setText(R.string.accountCardCreatorLabel)
       }
-      is AsLogoutButtonEnabled,
-      AsLogoutButtonDisabled -> {
+      is AsLoginButtonDisabled -> {
+        this.signUpLabel.setText(R.string.accountCardCreatorLabel)
+        this.signUpLabel.isEnabled = true
+      }
+      is AsLogoutButtonEnabled -> {
         this.signUpLabel.setText(R.string.accountWantChildCard)
+        this.signUpLabel.isEnabled = isNypl()
+        this.signUpButton.isEnabled = isNypl()
+        if (isNypl()) {
+          this.signUpLabel.setText(R.string.accountWantChildCard)
+        } else {
+          this.signUpLabel.setText(R.string.accountCardCreatorLabel)
+        }
+      }
+      is AsLogoutButtonDisabled -> {
+        if (isNypl()) {
+          this.signUpLabel.setText(R.string.accountWantChildCard)
+        } else {
+          this.signUpLabel.setText(R.string.accountCardCreatorLabel)
+        }
       }
       is AsCancelButtonEnabled,
       AsCancelButtonDisabled -> {
         // Nothing
       }
     }
+  }
+
+  /**
+   * Returns if the user is viewing the NYPL account
+   */
+  private fun isNypl(): Boolean {
+    var isNypl = false
+    val cardCreatorURI = this.account.provider.cardCreatorURI
+    if (cardCreatorURI != null) {
+      isNypl = cardCreatorURI.scheme == this.nyplCardCreatorScheme
+    }
+    return isNypl
   }
 
   private fun loadAuthenticationLogoIfNecessary(
@@ -853,6 +881,8 @@ class AccountFragment : Fragment() {
     val loginSatisfied = this.determineLoginIsSatisfied()
     this.setLoginButtonStatus(loginSatisfied)
     this.authenticationAlternativesShow()
+    this.signUpButton.isEnabled = true
+    this.signUpLabel.isEnabled = true
   }
 
   private fun authenticationAlternativesMake() {

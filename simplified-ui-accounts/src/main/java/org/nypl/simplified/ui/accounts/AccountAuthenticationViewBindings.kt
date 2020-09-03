@@ -1,14 +1,15 @@
 package org.nypl.simplified.ui.accounts
 
+import android.text.InputType
 import android.text.method.PasswordTransformationMethod
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
-import android.widget.EditText
 import android.widget.Switch
-import android.widget.TextView
 import android.widget.TextView.BufferType.EDITABLE
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import org.nypl.simplified.accounts.api.AccountPassword
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription.Basic
@@ -23,6 +24,7 @@ import org.nypl.simplified.ui.accounts.AccountLoginButtonStatus.AsLoginButtonDis
 import org.nypl.simplified.ui.accounts.AccountLoginButtonStatus.AsLoginButtonEnabled
 import org.nypl.simplified.ui.accounts.AccountLoginButtonStatus.AsLogoutButtonDisabled
 import org.nypl.simplified.ui.accounts.AccountLoginButtonStatus.AsLogoutButtonEnabled
+import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -76,15 +78,16 @@ sealed class AccountAuthenticationViewBindings {
 
   class ViewsForBasic(
     override val viewGroup: ViewGroup,
-    val logo: Button,
-    val pass: EditText,
-    val passLabel: TextView,
+    val pass: TextInputEditText,
+    val passLabel: TextInputLayout,
     val showPass: CheckBox,
-    val user: EditText,
-    val userLabel: TextView,
+    val user: TextInputEditText,
+    val userLabel: TextInputLayout,
     val onUsernamePasswordChangeListener: (AccountUsername, AccountPassword) -> Unit,
     val loginButton: Button
   ) : Base() {
+
+    private val logger = LoggerFactory.getLogger(ViewsForBasic::class.java)
 
     private val userTextListener =
       OnTextChangeListener(onChanged = { _, _, _, _ ->
@@ -111,11 +114,14 @@ sealed class AccountAuthenticationViewBindings {
        */
 
       this.showPass.setOnCheckedChangeListener { _, isChecked ->
-        if (isChecked) {
-          this.pass.transformationMethod = null
+        this.pass.transformationMethod = if (isChecked) {
+          null
         } else {
-          this.pass.transformationMethod = PasswordTransformationMethod.getInstance()
+          PasswordTransformationMethod.getInstance()
         }
+
+        // Reset the cursor position
+        this.pass.setSelection(this.pass.length())
       }
 
       this.user.addTextChangedListener(this.userTextListener)
@@ -185,52 +191,52 @@ sealed class AccountAuthenticationViewBindings {
       val noPasswordRequired =
         description.passwordKeyboard == NO_INPUT
       val userOk =
-        this.user.text.isNotBlank() || noUserRequired
+        !this.user.text.isNullOrBlank() || noUserRequired
       val passOk =
-        this.pass.text.isNotBlank() || noPasswordRequired
+        !this.pass.text.isNullOrBlank() || noPasswordRequired
       return userOk && passOk
     }
 
     fun configureFor(description: Basic) {
-      /*
-       * Configure the presence of the individual fields based on keyboard input values
-       * given in the authentication document.
-       *
-       * TODO: Add the extra input validation for the more precise types such as NUMBER_PAD.
-       */
+      val res = this.viewGroup.resources
 
-      when (description.keyboard) {
-        NO_INPUT -> {
-          this.userLabel.visibility = View.GONE
-          this.user.visibility = View.GONE
-        }
-        DEFAULT,
-        EMAIL_ADDRESS,
-        NUMBER_PAD -> {
-          this.userLabel.visibility = View.VISIBLE
-          this.user.visibility = View.VISIBLE
-        }
+      // Set input labels
+      this.userLabel.hint =
+        description.labels["LOGIN"] ?: res.getString(R.string.accountUserName)
+      this.passLabel.hint =
+        description.labels["PASSWORD"] ?: res.getString(R.string.accountPassword)
+      this.showPass.text =
+        res.getString(
+          R.string.accountPasswordShow,
+          (description.labels["PASSWORD"] ?: res.getString(R.string.accountPassword))
+        )
+
+      // Set input types
+      this.logger.debug("Setting {} for user input type", description.keyboard)
+      this.user.inputType = when (description.keyboard) {
+        DEFAULT, NO_INPUT ->
+          (InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_NORMAL)
+        EMAIL_ADDRESS ->
+          (InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+        NUMBER_PAD ->
+          (InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_NORMAL)
       }
 
-      when (description.passwordKeyboard) {
-        NO_INPUT -> {
-          this.passLabel.visibility = View.GONE
-          this.pass.visibility = View.GONE
-          this.showPass.visibility = View.GONE
-        }
-        DEFAULT,
-        EMAIL_ADDRESS,
-        NUMBER_PAD -> {
-          this.passLabel.visibility = View.VISIBLE
-          this.pass.visibility = View.VISIBLE
-          this.showPass.visibility = View.VISIBLE
-        }
+      this.logger.debug("Setting {} for password input type", description.passwordKeyboard)
+      this.pass.inputType = when (description.passwordKeyboard) {
+        DEFAULT, NO_INPUT, EMAIL_ADDRESS ->
+          (InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        NUMBER_PAD ->
+          (InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD)
       }
 
-      this.userLabel.text =
-        description.labels["LOGIN"] ?: this.userLabel.text
-      this.passLabel.text =
-        description.labels["PASSWORD"] ?: this.passLabel.text
+      // Toggle visibility of fields
+      this.userLabel.visibility =
+        if (description.keyboard == NO_INPUT) View.GONE else View.VISIBLE
+      this.passLabel.visibility =
+        if (description.passwordKeyboard == NO_INPUT) View.GONE else View.VISIBLE
+      this.showPass.visibility =
+        if (description.passwordKeyboard == NO_INPUT) View.GONE else View.VISIBLE
     }
 
     fun getPassword(): AccountPassword {
@@ -248,12 +254,11 @@ sealed class AccountAuthenticationViewBindings {
       ): ViewsForBasic {
         return ViewsForBasic(
           viewGroup = viewGroup,
-          logo = viewGroup.findViewById(R.id.authBasicLogo),
-          pass = viewGroup.findViewById(R.id.authBasicPasswordField),
-          passLabel = viewGroup.findViewById(R.id.authBasicPasswordLabel),
-          user = viewGroup.findViewById(R.id.authBasicUserNameField),
-          userLabel = viewGroup.findViewById(R.id.authBasicUserNameLabel),
-          showPass = viewGroup.findViewById(R.id.authBasicPasswordShow),
+          pass = viewGroup.findViewById(R.id.authBasicPassField),
+          passLabel = viewGroup.findViewById(R.id.authBasicPassLabel),
+          user = viewGroup.findViewById(R.id.authBasicUserField),
+          userLabel = viewGroup.findViewById(R.id.authBasicUserLabel),
+          showPass = viewGroup.findViewById(R.id.authBasicShowPass),
           onUsernamePasswordChangeListener = onUsernamePasswordChangeListener,
           loginButton = viewGroup.findViewById(R.id.authBasicLogin)
         )

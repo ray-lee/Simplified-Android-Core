@@ -42,10 +42,11 @@ import org.nypl.simplified.ui.errorpage.ErrorPageParameters
 import org.nypl.simplified.ui.profiles.ProfileTabFragment
 import org.nypl.simplified.ui.settings.SettingsFragmentCustomOPDS
 import org.nypl.simplified.ui.settings.SettingsFragmentMain
-import org.nypl.simplified.ui.settings.SettingsFragmentVersion
+import org.nypl.simplified.ui.settings.SettingsFragmentDebug
 import org.nypl.simplified.ui.settings.SettingsNavigationControllerType
 import org.nypl.simplified.ui.theme.ThemeControl
 import org.nypl.simplified.viewer.api.Viewers
+import org.nypl.simplified.viewer.spi.ViewerPreferences
 import org.slf4j.LoggerFactory
 
 /**
@@ -57,6 +58,7 @@ import org.slf4j.LoggerFactory
 
 class TabbedNavigationController private constructor(
   private val settingsConfiguration: BuildConfigurationServiceType,
+  private val profilesController: ProfilesControllerType,
   private val navigator: BottomNavigator
 ) : SettingsNavigationControllerType, CatalogNavigationControllerType {
 
@@ -131,7 +133,8 @@ class TabbedNavigationController private constructor(
 
       return TabbedNavigationController(
         navigator = navigator,
-        settingsConfiguration = settingsConfiguration
+        settingsConfiguration = settingsConfiguration,
+        profilesController = profilesController
       )
     }
 
@@ -302,7 +305,7 @@ class TabbedNavigationController private constructor(
 
   override fun openSettingsVersion() {
     this.navigator.addFragment(
-      fragment = SettingsFragmentVersion(),
+      fragment = SettingsFragmentDebug(),
       tab = R.id.tabSettings
     )
   }
@@ -383,6 +386,24 @@ class TabbedNavigationController private constructor(
     book: Book,
     format: BookFormat
   ) {
-    Viewers.openViewer(activity, book, format)
+
+    /*
+     * XXX: Enable or disable support for R2 based on the current profile's preferences. When R2
+     * moves from being experimental, this code can be removed.
+     */
+
+    val profile =
+      this.profilesController.profileCurrent()
+    val viewerPreferences =
+      ViewerPreferences(
+        flags = mapOf(Pair("useExperimentalR2", profile.preferences().useExperimentalR2))
+      )
+
+    Viewers.openViewer(
+      activity = activity,
+      preferences = viewerPreferences,
+      book = book,
+      format = format
+    )
   }
 }

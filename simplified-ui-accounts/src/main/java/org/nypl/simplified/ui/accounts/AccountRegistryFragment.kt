@@ -24,7 +24,6 @@ import org.nypl.simplified.accounts.registry.api.AccountProviderRegistryStatus
 import org.nypl.simplified.accounts.registry.api.AccountProviderRegistryType
 import org.nypl.simplified.buildconfig.api.BuildConfigurationServiceType
 import org.nypl.simplified.navigation.api.NavigationControllers
-import org.nypl.simplified.profiles.api.ProfilePreferences
 import org.nypl.simplified.profiles.controller.api.ProfilesControllerType
 import org.nypl.simplified.threads.NamedThreadPools
 import org.nypl.simplified.ui.errorpage.ErrorPageParameters
@@ -59,6 +58,13 @@ class AccountRegistryFragment : Fragment() {
   private var accountCreationSubscription: Disposable? = null
   private var accountRegistrySubscription: Disposable? = null
 
+  private val navigationController by lazy<AccountNavigationControllerType> {
+    NavigationControllers.find(
+      activity = this.requireActivity(),
+      interfaceType = AccountNavigationControllerType::class.java
+    )
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
@@ -90,37 +96,22 @@ class AccountRegistryFragment : Fragment() {
    */
 
   private fun determineAvailableAccountProviderDescriptions(): List<AccountProviderDescription> {
-
-    val profileCurrent =
-      this.profilesController.profileCurrent()
-    val preferences =
-      profileCurrent.preferences()
-
     val usedAccountProviders =
       this.profilesController
         .profileCurrentlyUsedAccountProviders()
         .map { p -> p.toDescription() }
 
-    this.logger.debug("should show testing providers: {}", preferences.showTestingLibraries)
     this.logger.debug("profile is using {} providers", usedAccountProviders.size)
 
     val availableAccountProviders =
       this.accountRegistry.accountProviderDescriptions()
         .values
-        .filter { provider -> this.shouldShowProvider(provider, preferences) }
         .toMutableList()
-
     availableAccountProviders.removeAll(usedAccountProviders)
 
     this.logger.debug("returning {} available providers", availableAccountProviders.size)
     return availableAccountProviders
   }
-
-  private fun shouldShowProvider(
-    provider: AccountProviderDescription,
-    preferences: ProfilePreferences
-  ) =
-    provider.isProduction || preferences.showTestingLibraries
 
   @UiThread
   private fun onAccountClicked(account: AccountProviderDescription) {
@@ -147,8 +138,9 @@ class AccountRegistryFragment : Fragment() {
         })
 
       is AccountEventCreation.AccountEventCreationSucceeded -> {
-        this.findNavigationController().popBackStack()
-        Unit
+        this.uiThread.runOnUIThread {
+          this.navigationController.popBackStack()
+        }
       }
 
       is AccountEventCreation.AccountEventCreationFailed ->
@@ -207,10 +199,13 @@ class AccountRegistryFragment : Fragment() {
     return layout
   }
 
+  override fun onActivityCreated(savedInstanceState: Bundle?) {
+    super.onActivityCreated(savedInstanceState)
+    this.configureToolbar()
+  }
+
   override fun onStart() {
     super.onStart()
-
-    this.configureToolbar()
 
     this.backgroundExecutor =
       NamedThreadPools.namedThreadPool(1, "simplified-registry-io", 19)
@@ -249,10 +244,10 @@ class AccountRegistryFragment : Fragment() {
       host.toolbarSetBackArrowConditionally(
         context = host,
         shouldArrowBePresent = {
-          this.findNavigationController().backStackSize() > 1
+          this.navigationController.backStackSize() > 1
         },
         onArrowClicked = {
-          this.findNavigationController().popBackStack()
+          this.navigationController.popBackStack()
         })
     } else {
       throw IllegalStateException("The activity ($host) hosting this fragment must implement ${ToolbarHostType::class.java}")
@@ -318,13 +313,6 @@ class AccountRegistryFragment : Fragment() {
     this.accountRegistrySubscription?.dispose()
   }
 
-  private fun findNavigationController(): AccountNavigationControllerType {
-    return NavigationControllers.find(
-      activity = this.requireActivity(),
-      interfaceType = AccountNavigationControllerType::class.java
-    )
-  }
-
   @UiThread
   private fun showAccountCreationFailedDialog(accountEvent: AccountEventCreation.AccountEventCreationFailed) {
     this.uiThread.checkIsUIThread()
@@ -359,6 +347,6 @@ class AccountRegistryFragment : Fragment() {
         taskSteps = accountEvent.taskResult.steps
       )
 
-    this.findNavigationController().openErrorPage(parameters)
+    this.navigationController.openErrorPage(parameters)
   }
 }

@@ -24,7 +24,9 @@ import org.joda.time.format.DateTimeFormatterBuilder
 import org.librarysimplified.services.api.Services
 import org.nypl.simplified.books.api.Book
 import org.nypl.simplified.books.api.BookFormat
-import org.nypl.simplified.books.book_database.api.BookFormats
+import org.nypl.simplified.books.book_database.api.BookFormats.BookFormatDefinition.BOOK_FORMAT_AUDIO
+import org.nypl.simplified.books.book_database.api.BookFormats.BookFormatDefinition.BOOK_FORMAT_EPUB
+import org.nypl.simplified.books.book_database.api.BookFormats.BookFormatDefinition.BOOK_FORMAT_PDF
 import org.nypl.simplified.books.book_registry.BookRegistryReadableType
 import org.nypl.simplified.books.book_registry.BookStatus
 import org.nypl.simplified.books.book_registry.BookStatusEvent
@@ -49,6 +51,7 @@ import org.nypl.simplified.taskrecorder.api.TaskResult
 import org.nypl.simplified.taskrecorder.api.TaskStepResolution.TaskStepFailed
 import org.nypl.simplified.taskrecorder.api.TaskStepResolution.TaskStepSucceeded
 import org.nypl.simplified.ui.accounts.AccountFragmentParameters
+import org.nypl.simplified.ui.catalog.R.string
 import org.nypl.simplified.ui.errorpage.ErrorPageParameters
 import org.nypl.simplified.ui.screen.ScreenSizeInformationType
 import org.nypl.simplified.ui.thread.api.UIThreadServiceType
@@ -349,19 +352,22 @@ class CatalogFragmentBookDetail : Fragment() {
   private fun onOPDSFeedEntryUI(feedEntry: FeedEntryOPDS) {
     this.uiThread.checkIsUIThread()
 
+    // Sanity check; ensure we're attached to a valid context. We've seen some lifecycle related
+    // crashes related to being detached when this method executes.
+    val context = this.context ?: return
+
     val opds = feedEntry.feedEntry
     this.title.text = opds.title
     this.authors.text = opds.authorsCommaSeparated
 
-    val context = this.requireContext()
     this.format.text = when (feedEntry.probableFormat) {
-      null,
-      BookFormats.BookFormatDefinition.BOOK_FORMAT_EPUB ->
-        context.getString(R.string.catalogBookFormatEPUB)
-      BookFormats.BookFormatDefinition.BOOK_FORMAT_AUDIO ->
-        context.getString(R.string.catalogBookFormatAudioBook)
-      BookFormats.BookFormatDefinition.BOOK_FORMAT_PDF ->
-        context.getString(R.string.catalogBookFormatPDF)
+      BOOK_FORMAT_EPUB ->
+        context.getString(string.catalogBookFormatEPUB)
+      BOOK_FORMAT_AUDIO ->
+        context.getString(string.catalogBookFormatAudioBook)
+      BOOK_FORMAT_PDF ->
+        context.getString(string.catalogBookFormatPDF)
+      null -> ""
     }
 
     this.cover.contentDescription =

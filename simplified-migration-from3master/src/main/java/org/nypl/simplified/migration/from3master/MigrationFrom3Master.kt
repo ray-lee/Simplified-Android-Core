@@ -5,7 +5,6 @@ import android.os.Environment
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.base.Preconditions
-import com.io7m.jfunctional.Option
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
 import org.joda.time.LocalDateTime
@@ -29,6 +28,7 @@ import org.nypl.simplified.books.api.BookIDs
 import org.nypl.simplified.books.api.BookLocation
 import org.nypl.simplified.books.api.Bookmark
 import org.nypl.simplified.books.api.BookmarkKind
+import org.nypl.simplified.books.book_database.api.BookDRMInformationHandle
 import org.nypl.simplified.books.book_database.api.BookDatabaseEntryFormatHandle
 import org.nypl.simplified.books.book_database.api.BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandleAudioBook
 import org.nypl.simplified.books.book_database.api.BookDatabaseEntryFormatHandle.BookDatabaseEntryFormatHandleEPUB
@@ -468,7 +468,14 @@ class MigrationFrom3Master(
     }
 
     try {
-      handle.setAdobeRightsInformation(book.epubAdobeLoan)
+      when (val drm = handle.drmInformationHandle) {
+        is BookDRMInformationHandle.ACSHandle ->
+          drm.setAdobeRightsInformation(book.epubAdobeLoan)
+        is BookDRMInformationHandle.LCPHandle,
+        is BookDRMInformationHandle.NoneHandle -> {
+          // Nothing required
+        }
+      }
     } catch (e: Exception) {
       this.logger.error("failed to copy adobe DRM information: ", e)
       this.publishStepError(MigrationStepError(
@@ -641,15 +648,13 @@ class MigrationFrom3Master(
 
     return try {
       val bookLocation =
-        BookLocation.create(Option.none(), "x")
+        BookLocation(null, null, "x")
       val kind =
         BookmarkKind.ofMotivation(annotation.motivation)
       val time =
         formatter.parseLocalDateTime(annotation.body.timestamp)
       val chapterTitle =
         annotation.body.chapterTitle ?: ""
-      val chapterProgress =
-        annotation.body.chapterProgress?.toDouble() ?: 0.0
       val bookProgress =
         annotation.body.bookProgress?.toDouble() ?: 0.0
       val deviceId =
@@ -663,7 +668,6 @@ class MigrationFrom3Master(
         kind = kind,
         time = time,
         chapterTitle = chapterTitle,
-        chapterProgress = chapterProgress,
         bookProgress = bookProgress,
         deviceID = deviceId,
         uri = uri

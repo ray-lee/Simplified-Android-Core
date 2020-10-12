@@ -158,33 +158,18 @@ public final class ReaderReadiumJavaScriptAPI implements ReaderReadiumJavaScript
     this.evaluate("ReadiumSDK.reader.openPageLeft();");
   }
 
-  private static String fontFamilyName(
-    final ReaderFontSelection selection) {
-    switch (selection) {
-      case READER_FONT_SANS_SERIF:
-        return "sans-serif";
-      case READER_FONT_OPEN_DYSLEXIC:
-        return "OpenDyslexic3";
-      case READER_FONT_SERIF:
-        return "serif";
-    }
-    throw new UnreachableCodeException();
-  }
-
   @Override
-  public void setPageStyleSettings(
+  public void setBookStyles(
     final ReaderPreferences preferences) {
     try {
       final ReaderColorScheme cs = preferences.colorScheme();
 
       final String foreground = ReaderColorSchemes.foregroundAsBrowserHex(cs);
       final String background = ReaderColorSchemes.backgroundAsBrowserHex(cs);
-      final String fontFamily = fontFamilyName(preferences.fontFamily());
 
       final JSONObject decls = new JSONObject();
       decls.put("color", foreground);
       decls.put("backgroundColor", background);
-      decls.put("font-family", fontFamily);
 
       final JSONObject o = new JSONObject();
       o.put("selector", "*");
@@ -204,11 +189,20 @@ public final class ReaderReadiumJavaScriptAPI implements ReaderReadiumJavaScript
       script.append(foreground);
       script.append("\";");
       this.evaluate(script.toString());
+    } catch (final JSONException e) {
+      LOG.error("error constructing json: {}", e.getMessage(), e);
+    }
+  }
 
+  @Override
+  public void updateSettings(
+    final ReaderPreferences preferences) {
+    try {
       final ReaderReadiumViewerSettings vs =
         new ReaderReadiumViewerSettings(
           ReaderReadiumViewerSettings.SyntheticSpreadMode.SINGLE,
           ReaderReadiumViewerSettings.ScrollMode.AUTO,
+          preferences.fontFamily(),
           (int) preferences.fontScale(),
           20);
 

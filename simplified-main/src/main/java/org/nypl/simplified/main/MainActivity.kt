@@ -17,10 +17,7 @@ import com.io7m.jfunctional.Some
 import io.reactivex.Observable
 import org.librarysimplified.services.api.Services
 import org.nypl.simplified.accounts.api.AccountAuthenticationCredentials
-import org.nypl.simplified.accounts.api.AccountCreateErrorDetails
 import org.nypl.simplified.accounts.api.AccountID
-import org.nypl.simplified.accounts.api.AccountLoginState.AccountLoginErrorData
-import org.nypl.simplified.accounts.api.AccountLoginState.AccountLoginErrorData.AccountLoginMissingInformation
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription
 import org.nypl.simplified.accounts.database.api.AccountType
 import org.nypl.simplified.accounts.registry.api.AccountProviderRegistryType
@@ -36,7 +33,6 @@ import org.nypl.simplified.navigation.api.NavigationControllerDirectoryType
 import org.nypl.simplified.navigation.api.NavigationControllers
 import org.nypl.simplified.oauth.OAuthCallbackIntentParsing
 import org.nypl.simplified.oauth.OAuthParseResult
-import org.nypl.simplified.presentableerror.api.PresentableErrorType
 import org.nypl.simplified.profiles.api.ProfileID
 import org.nypl.simplified.profiles.api.ProfilesDatabaseType
 import org.nypl.simplified.profiles.api.ProfilesDatabaseType.AnonymousProfileEnabled.ANONYMOUS_PROFILE_DISABLED
@@ -133,10 +129,10 @@ class MainActivity :
     profilesController: ProfilesControllerType,
     account: AccountType,
     credentials: AccountAuthenticationCredentials
-  ): TaskResult<AccountLoginErrorData, Unit> {
+  ): TaskResult<Unit> {
     this.logger.debug("doLoginAccount")
 
-    val taskRecorder = TaskRecorder.create<AccountLoginErrorData>()
+    val taskRecorder = TaskRecorder.create()
     taskRecorder.beginNewStep("Logging in...")
 
     if (account.provider.authenticationAlternatives.isEmpty()) {
@@ -159,7 +155,7 @@ class MainActivity :
             }
             is AccountAuthenticationCredentials.OAuthWithIntermediary -> {
               val message = "Can't use OAuth authentication during migrations."
-              taskRecorder.currentStepFailed(message, AccountLoginMissingInformation(message))
+              taskRecorder.currentStepFailed(message, "missingInformation")
               return taskRecorder.finishFailure()
             }
             is AccountAuthenticationCredentials.SAML2_0 -> {
@@ -171,7 +167,7 @@ class MainActivity :
         }
         is AccountProviderAuthenticationDescription.OAuthWithIntermediary -> {
           val message = "Can't use OAuth authentication during migrations."
-          taskRecorder.currentStepFailed(message, AccountLoginMissingInformation(message))
+          taskRecorder.currentStepFailed(message, "missingInformation")
           return taskRecorder.finishFailure()
         }
         is AccountProviderAuthenticationDescription.SAML2_0 -> {
@@ -182,7 +178,7 @@ class MainActivity :
       }
     } else {
       val message = "Can't determine which authentication method is required."
-      taskRecorder.currentStepFailed(message, AccountLoginMissingInformation(message))
+      taskRecorder.currentStepFailed(message, "missingInformation")
       return taskRecorder.finishFailure()
     }
   }
@@ -190,7 +186,7 @@ class MainActivity :
   private fun doCreateAccount(
     profilesController: ProfilesControllerType,
     provider: URI
-  ): TaskResult<AccountCreateErrorDetails, AccountType> {
+  ): TaskResult<AccountType> {
     this.logger.debug("doCreateAccount")
     return profilesController.profileAccountCreateOrReturnExisting(provider)
       .get(3L, TimeUnit.MINUTES)
@@ -495,7 +491,7 @@ class MainActivity :
         },
         accountEvents = profilesController.accountEvents(),
         applicationProfileIsAnonymous =
-        profilesController.profileAnonymousEnabled() == ANONYMOUS_PROFILE_ENABLED,
+          profilesController.profileAnonymousEnabled() == ANONYMOUS_PROFILE_ENABLED,
         applicationVersion = this.applicationVersion(),
         context = this
       )
@@ -527,9 +523,7 @@ class MainActivity :
           return true
         }
 
-        override fun <E : PresentableErrorType> openErrorPage(
-          parameters: ErrorPageParameters<E>
-        ) {
+        override fun openErrorPage(parameters: ErrorPageParameters) {
           val errorPage = ErrorPageFragment.create(parameters)
           manager.beginTransaction()
             .replace(R.id.mainFragmentHolder, errorPage, "MAIN")
@@ -561,7 +555,7 @@ class MainActivity :
     this.openCatalog()
   }
 
-  override fun onErrorPageSendReport(parameters: ErrorPageParameters<*>) {
+  override fun onErrorPageSendReport(parameters: ErrorPageParameters) {
     Reports.sendReportsDefault(
       context = this,
       address = parameters.emailAddress,

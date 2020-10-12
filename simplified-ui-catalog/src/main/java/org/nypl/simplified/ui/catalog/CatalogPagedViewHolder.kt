@@ -30,16 +30,13 @@ import org.nypl.simplified.feeds.api.FeedEntry
 import org.nypl.simplified.feeds.api.FeedEntry.FeedEntryCorrupt
 import org.nypl.simplified.feeds.api.FeedEntry.FeedEntryOPDS
 import org.nypl.simplified.futures.FluentFutureExtensions.map
-import org.nypl.simplified.presentableerror.api.PresentableErrorType
 import org.nypl.simplified.profiles.controller.api.ProfilesControllerType
 import org.nypl.simplified.taskrecorder.api.TaskResult
-import org.nypl.simplified.taskrecorder.api.TaskStepResolution
 import org.nypl.simplified.ui.accounts.AccountFragmentParameters
 import org.nypl.simplified.ui.catalog.R.string
 import org.nypl.simplified.ui.errorpage.ErrorPageParameters
 import org.nypl.simplified.ui.thread.api.UIThreadServiceType
 import org.slf4j.LoggerFactory
-import java.util.SortedMap
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -386,10 +383,12 @@ class CatalogPagedViewHolder(
     this.setVisibilityIfNecessary(this.progress, View.GONE)
 
     this.idleButtons.removeAllViews()
-    this.idleButtons.addView(this.buttonCreator.createDownloadButton {
-      this.openLoginDialogIfNecessary(book.account)
-      this.borrowViewModel.tryBorrowMaybeAuthenticated(book)
-    })
+    this.idleButtons.addView(
+      this.buttonCreator.createDownloadButton {
+        this.openLoginDialogIfNecessary(book.account)
+        this.borrowViewModel.tryBorrowMaybeAuthenticated(book)
+      }
+    )
     this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
     this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
   }
@@ -402,10 +401,12 @@ class CatalogPagedViewHolder(
     this.setVisibilityIfNecessary(this.progress, View.GONE)
 
     this.idleButtons.removeAllViews()
-    this.idleButtons.addView(this.buttonCreator.createGetButton {
-      this.openLoginDialogIfNecessary(book.account)
-      this.borrowViewModel.tryBorrowMaybeAuthenticated(book)
-    })
+    this.idleButtons.addView(
+      this.buttonCreator.createGetButton {
+        this.openLoginDialogIfNecessary(book.account)
+        this.borrowViewModel.tryBorrowMaybeAuthenticated(book)
+      }
+    )
     this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
     this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
   }
@@ -418,10 +419,12 @@ class CatalogPagedViewHolder(
     this.setVisibilityIfNecessary(this.progress, View.GONE)
 
     this.idleButtons.removeAllViews()
-    this.idleButtons.addView(this.buttonCreator.createReserveButton {
-      this.openLoginDialogIfNecessary(book.account)
-      this.borrowViewModel.tryReserveMaybeAuthenticated(book)
-    })
+    this.idleButtons.addView(
+      this.buttonCreator.createReserveButton {
+        this.openLoginDialogIfNecessary(book.account)
+        this.borrowViewModel.tryReserveMaybeAuthenticated(book)
+      }
+    )
     this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
     this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
   }
@@ -441,12 +444,15 @@ class CatalogPagedViewHolder(
       this.idleButtons.addView(
         this.buttonCreator.createRevokeHoldButton {
           this.borrowViewModel.tryRevokeMaybeAuthenticated(book)
-        })
+        }
+      )
     }
-    this.idleButtons.addView(this.buttonCreator.createGetButton {
-      this.openLoginDialogIfNecessary(book.account)
-      this.borrowViewModel.tryBorrowMaybeAuthenticated(book)
-    })
+    this.idleButtons.addView(
+      this.buttonCreator.createGetButton {
+        this.openLoginDialogIfNecessary(book.account)
+        this.borrowViewModel.tryBorrowMaybeAuthenticated(book)
+      }
+    )
   }
 
   @UiThread
@@ -464,7 +470,8 @@ class CatalogPagedViewHolder(
       this.idleButtons.addView(
         this.buttonCreator.createRevokeHoldButton {
           this.borrowViewModel.tryRevokeMaybeAuthenticated(book)
-        })
+        }
+      )
       this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
       this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
     } else {
@@ -486,14 +493,18 @@ class CatalogPagedViewHolder(
     when (val format = book.findPreferredFormat()) {
       is BookFormat.BookFormatPDF,
       is BookFormat.BookFormatEPUB -> {
-        this.idleButtons.addView(this.buttonCreator.createReadButton {
-          this.navigation().openViewer(this.context, book, format)
-        })
+        this.idleButtons.addView(
+          this.buttonCreator.createReadButton {
+            this.navigation().openViewer(this.context, book, format)
+          }
+        )
       }
       is BookFormat.BookFormatAudioBook -> {
-        this.idleButtons.addView(this.buttonCreator.createListenButton {
-          this.navigation().openViewer(this.context, book, format)
-        })
+        this.idleButtons.addView(
+          this.buttonCreator.createListenButton {
+            this.navigation().openViewer(this.context, book, format)
+          }
+        )
       }
       null -> {
         this.idleButtons.addView(this.buttonCreator.createButtonSizedSpace())
@@ -591,9 +602,9 @@ class CatalogPagedViewHolder(
     }
   }
 
-  private fun <E : PresentableErrorType> tryShowError(
+  private fun tryShowError(
     book: Book,
-    result: TaskResult.Failure<E, *>
+    result: TaskResult.Failure<*>
   ) {
     this.logger.debug("showing error: {}", book.id)
 
@@ -601,25 +612,9 @@ class CatalogPagedViewHolder(
       emailAddress = this.configurationService.supportErrorReportEmailAddress,
       body = "",
       subject = this.configurationService.supportErrorReportSubject,
-      attributes = this.collectAttributes(result),
+      attributes = result.attributes.toSortedMap(),
       taskSteps = result.steps
     )
     this.navigation().openErrorPage(errorPageParameters)
-  }
-
-  private fun <E : PresentableErrorType> collectAttributes(
-    result: TaskResult.Failure<E, *>
-  ): SortedMap<String, String> {
-    val attributes = mutableMapOf<String, String>()
-    for (step in result.steps) {
-      when (val resolution = step.resolution) {
-        is TaskStepResolution.TaskStepSucceeded -> {
-        }
-        is TaskStepResolution.TaskStepFailed -> {
-          attributes.putAll(resolution.errorValue.attributes)
-        }
-      }
-    }
-    return attributes.toSortedMap()
   }
 }

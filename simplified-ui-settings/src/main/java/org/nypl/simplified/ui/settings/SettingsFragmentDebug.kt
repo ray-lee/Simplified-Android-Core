@@ -28,6 +28,7 @@ import org.nypl.simplified.books.controller.api.BooksControllerType
 import org.nypl.simplified.boot.api.BootFailureTesting
 import org.nypl.simplified.buildconfig.api.BuildConfigurationServiceType
 import org.nypl.simplified.cardcreator.CardCreatorDebugging
+import org.nypl.simplified.feeds.api.FeedLoaderType
 import org.nypl.simplified.navigation.api.NavigationControllers
 import org.nypl.simplified.presentableerror.api.PresentableErrorType
 import org.nypl.simplified.profiles.api.ProfileEvent
@@ -81,6 +82,8 @@ class SettingsFragmentDebug : Fragment() {
   private lateinit var drmTable: TableLayout
   private lateinit var enableR2: SwitchCompat
   private lateinit var failNextBoot: SwitchCompat
+  private lateinit var feedLoader: FeedLoaderType
+  private lateinit var showOnlySupportedBooks: SwitchCompat
   private lateinit var hasSeenLibrarySelection: SwitchCompat
   private lateinit var profilesController: ProfilesControllerType
   private lateinit var sendAnalyticsButton: Button
@@ -107,6 +110,8 @@ class SettingsFragmentDebug : Fragment() {
       services.requireService(AccountProviderRegistryType::class.java)
     this.analytics =
       services.requireService(AnalyticsType::class.java)
+    this.feedLoader =
+      services.requireService(FeedLoaderType::class.java)
     this.uiThread =
       services.requireService(UIThreadServiceType::class.java)
     this.buildConfig =
@@ -149,6 +154,8 @@ class SettingsFragmentDebug : Fragment() {
       view.findViewById(R.id.settingsVersionDevCardCreatorLocationSwitch)
     this.enableR2 =
       view.findViewById(R.id.settingsVersionDevEnableR2Switch)
+    this.showOnlySupportedBooks =
+      view.findViewById(R.id.settingsVersionDevShowOnlySupported)
     this.customOPDS =
       view.findViewById(R.id.settingsVersionDevCustomOPDS)
 
@@ -312,6 +319,15 @@ class SettingsFragmentDebug : Fragment() {
         description.copy(preferences = description.preferences.copy(useExperimentalR2 = r2))
       }
     }
+
+    /*
+     * Update the feed loader when filtering options are changed.
+     */
+
+    this.showOnlySupportedBooks.isChecked = this.feedLoader.showOnlySupportedBooks
+    this.showOnlySupportedBooks.setOnClickListener {
+      this.feedLoader.showOnlySupportedBooks = this.showOnlySupportedBooks.isChecked
+    }
   }
 
   private fun configureToolbar() {
@@ -329,7 +345,8 @@ class SettingsFragmentDebug : Fragment() {
         },
         onArrowClicked = {
           this.navigationController.popBackStack()
-        })
+        }
+      )
     } else {
       throw IllegalStateException("The activity ($host) hosting this fragment must implement ${ToolbarHostType::class.java}")
     }
@@ -345,7 +362,7 @@ class SettingsFragmentDebug : Fragment() {
     )
 
     val taskSteps =
-      mutableListOf<TaskStep<ExampleError>>()
+      mutableListOf<TaskStep>()
 
     taskSteps.add(
       TaskStep(
@@ -379,12 +396,14 @@ class SettingsFragmentDebug : Fragment() {
 
   private fun onProfileEvent(event: ProfileEvent) {
     if (event is ProfileUpdated) {
-      this.uiThread.runOnUIThread(Runnable {
-        this.showTesting.isChecked = this.profilesController
-          .profileCurrent()
-          .preferences()
-          .showTestingLibraries
-      })
+      this.uiThread.runOnUIThread(
+        Runnable {
+          this.showTesting.isChecked = this.profilesController
+            .profileCurrent()
+            .preferences()
+            .showTestingLibraries
+        }
+      )
 
       if (event is Succeeded) {
         val old = event.oldDescription.preferences
@@ -426,17 +445,20 @@ class SettingsFragmentDebug : Fragment() {
       AdobeDRMExtensions.getDeviceActivations(
         executor,
         { message -> this.logger.error("DRM: {}", message) },
-        { message -> this.logger.debug("DRM: {}", message) })
+        { message -> this.logger.debug("DRM: {}", message) }
+      )
 
     adeptFuture.addListener(
       Runnable {
-        this.uiThread.runOnUIThread(Runnable {
-          try {
-            this.onAdobeDRMReceivedActivations(adeptFuture.get())
-          } catch (e: Exception) {
-            this.onAdobeDRMReceivedActivationsError(e)
+        this.uiThread.runOnUIThread(
+          Runnable {
+            try {
+              this.onAdobeDRMReceivedActivations(adeptFuture.get())
+            } catch (e: Exception) {
+              this.onAdobeDRMReceivedActivationsError(e)
+            }
           }
-        })
+        )
       },
       MoreExecutors.directExecutor()
     )

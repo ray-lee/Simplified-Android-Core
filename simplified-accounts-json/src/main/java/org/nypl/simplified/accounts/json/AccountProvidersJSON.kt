@@ -74,7 +74,8 @@ object AccountProvidersJSON {
     this.putConditionally(node, "subtitle", provider.subtitle)
     this.putConditionally(node, "supportEmail", provider.supportEmail)
 
-    node.set<ObjectNode>("authentication",
+    node.set<ObjectNode>(
+      "authentication",
       this.serializeAuthentication(mapper, provider.authentication)
     )
 
@@ -175,7 +176,6 @@ object AccountProvidersJSON {
 
   @Throws(JSONParseException::class)
   fun deserializeFromJSON(node: JsonNode): AccountProvider {
-
     val obj =
       JSONParserUtilities.checkObject(null, node)
     val idUUID =
@@ -353,9 +353,9 @@ object AccountProvidersJSON {
       COPPA_TYPE -> {
         COPPAAgeGate(
           greaterEqual13 =
-          JSONParserUtilities.getURIOrNull(container, "greaterEqual13"),
+            JSONParserUtilities.getURIOrNull(container, "greaterEqual13"),
           under13 =
-          JSONParserUtilities.getURIOrNull(container, "under13")
+            JSONParserUtilities.getURIOrNull(container, "under13")
         )
       }
       else -> {
@@ -415,7 +415,6 @@ object AccountProvidersJSON {
 
   @Throws(JSONParseException::class)
   fun deserializeCollectionFromJSONArray(node: ArrayNode): Map<URI, AccountProvider> {
-
     val providers = TreeMap<URI, AccountProvider>()
     var default_provider: AccountProvider? = null
 

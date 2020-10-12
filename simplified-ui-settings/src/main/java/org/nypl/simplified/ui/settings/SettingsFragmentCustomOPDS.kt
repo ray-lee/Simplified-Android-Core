@@ -15,7 +15,6 @@ import com.google.common.util.concurrent.FluentFuture
 import com.google.common.util.concurrent.MoreExecutors
 import io.reactivex.disposables.Disposable
 import org.librarysimplified.services.api.Services
-import org.nypl.simplified.accounts.api.AccountCreateErrorDetails
 import org.nypl.simplified.accounts.api.AccountEvent
 import org.nypl.simplified.accounts.database.api.AccountType
 import org.nypl.simplified.navigation.api.NavigationControllers
@@ -39,7 +38,7 @@ class SettingsFragmentCustomOPDS : Fragment() {
   private var accountSubscription: Disposable? = null
 
   @Volatile
-  private var future: FluentFuture<TaskResult<AccountCreateErrorDetails, AccountType>>? = null
+  private var future: FluentFuture<TaskResult<AccountType>>? = null
 
   private lateinit var create: Button
   private lateinit var feedURL: EditText
@@ -129,32 +128,37 @@ class SettingsFragmentCustomOPDS : Fragment() {
         },
         onArrowClicked = {
           this.findNavigationController().popBackStack()
-        })
+        }
+      )
     } else {
       throw IllegalStateException("The activity ($host) hosting this fragment must implement ${ToolbarHostType::class.java}")
     }
   }
 
   private fun onCreationFinished() {
-    this.uiThread.runOnUIThread(Runnable {
-      this.progress.visibility = View.INVISIBLE
-      this.create.isEnabled = true
-    })
+    this.uiThread.runOnUIThread(
+      Runnable {
+        this.progress.visibility = View.INVISIBLE
+        this.create.isEnabled = true
+      }
+    )
   }
 
   private fun onAccountEvent(event: AccountEvent) {
-    this.uiThread.runOnUIThread(Runnable {
-      this.progressText.append(event.message)
-      this.progressText.append("\n")
-
-      for (name in event.attributes.keys) {
-        this.progressText.append("    ")
-        this.progressText.append(name)
-        this.progressText.append(": ")
-        this.progressText.append(event.attributes[name])
+    this.uiThread.runOnUIThread(
+      Runnable {
+        this.progressText.append(event.message)
         this.progressText.append("\n")
+
+        for (name in event.attributes.keys) {
+          this.progressText.append("    ")
+          this.progressText.append(name)
+          this.progressText.append(": ")
+          this.progressText.append(event.attributes[name])
+          this.progressText.append("\n")
+        }
       }
-    })
+    )
   }
 
   private fun isValidURI(): Boolean {

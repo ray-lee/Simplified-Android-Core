@@ -114,18 +114,23 @@ sealed class AccountAuthenticationViewBindings {
        */
 
       this.showPass.setOnCheckedChangeListener { _, isChecked ->
-        this.pass.transformationMethod = if (isChecked) {
+        setPasswordVisible(isChecked)
+      }
+
+      this.user.addTextChangedListener(this.userTextListener)
+      this.pass.addTextChangedListener(this.passTextListener)
+    }
+
+    private fun setPasswordVisible(visible: Boolean) {
+      this.pass.transformationMethod =
+        if (visible) {
           null
         } else {
           PasswordTransformationMethod.getInstance()
         }
 
-        // Reset the cursor position
-        this.pass.setSelection(this.pass.length())
-      }
-
-      this.user.addTextChangedListener(this.userTextListener)
-      this.pass.addTextChangedListener(this.passTextListener)
+      // Reset the cursor position
+      this.pass.setSelection(this.pass.length())
     }
 
     override fun lock() {
@@ -237,6 +242,9 @@ sealed class AccountAuthenticationViewBindings {
         if (description.passwordKeyboard == NO_INPUT) View.GONE else View.VISIBLE
       this.showPass.visibility =
         if (description.passwordKeyboard == NO_INPUT) View.GONE else View.VISIBLE
+
+      // Reset password visibility
+      setPasswordVisible(this.showPass.isChecked)
     }
 
     fun getPassword(): AccountPassword {

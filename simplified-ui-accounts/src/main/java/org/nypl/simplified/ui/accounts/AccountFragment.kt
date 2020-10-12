@@ -841,7 +841,7 @@ class AccountFragment : Fragment() {
   }
 
   @UiThread
-  private fun <E : PresentableErrorType> openErrorPage(taskSteps: List<TaskStep<E>>) {
+  private fun openErrorPage(taskSteps: List<TaskStep>) {
     this.uiThread.checkIsUIThread()
 
     val parameters =

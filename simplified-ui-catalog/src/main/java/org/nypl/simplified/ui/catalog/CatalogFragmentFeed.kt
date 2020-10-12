@@ -57,8 +57,7 @@ import org.nypl.simplified.profiles.api.ProfileDescription
 import org.nypl.simplified.profiles.api.ProfileEvent
 import org.nypl.simplified.profiles.api.ProfileUpdated
 import org.nypl.simplified.profiles.controller.api.ProfilesControllerType
-import org.nypl.simplified.taskrecorder.api.TaskStep
-import org.nypl.simplified.taskrecorder.api.TaskStepResolution
+import org.nypl.simplified.taskrecorder.api.TaskRecorder
 import org.nypl.simplified.ui.accounts.AccountFragmentParameters
 import org.nypl.simplified.ui.accounts.AccountPickerDialogFragment
 import org.nypl.simplified.ui.catalog.CatalogFeedArguments.CatalogFeedArgumentsRemote
@@ -192,7 +191,6 @@ class CatalogFragmentFeed : Fragment() {
     container: ViewGroup?,
     savedInstanceState: Bundle?
   ): View {
-
     this.buttonCreator =
       CatalogButtons(this.requireContext(), this.screenInformation)
 
@@ -614,10 +612,13 @@ class CatalogFragmentFeed : Fragment() {
       )
 
     this.feedWithoutGroupsList.adapter = this.feedWithoutGroupsAdapter
-    feedState.entries.observe(this, Observer { newPagedList ->
-      this.logger.debug("received paged list ({} elements)", newPagedList.size)
-      this.feedWithoutGroupsAdapter.submitList(newPagedList)
-    })
+    feedState.entries.observe(
+      this,
+      Observer { newPagedList ->
+        this.logger.debug("received paged list ({} elements)", newPagedList.size)
+        this.feedWithoutGroupsAdapter.submitList(newPagedList)
+      }
+    )
   }
 
   @Suppress("UNUSED_PARAMETER")
@@ -675,7 +676,6 @@ class CatalogFragmentFeed : Fragment() {
       is FeedLoaderFailedAuthentication -> {
         when (val ownership = this.parameters.ownership) {
           is CatalogFeedOwnership.OwnedByAccount -> {
-
             /*
              * Explicitly deferring the opening of the fragment is required due to the
              * tabbed navigation controller eagerly instantiating fragments and causing
@@ -685,11 +685,13 @@ class CatalogFragmentFeed : Fragment() {
 
             this.uiThread.runOnUIThread {
               this.navigationController
-                .openSettingsAccount(AccountFragmentParameters(
-                  accountId = ownership.accountId,
-                  closeOnLoginSuccess = true,
-                  showPleaseLogInTitle = true
-                ))
+                .openSettingsAccount(
+                  AccountFragmentParameters(
+                    accountId = ownership.accountId,
+                    closeOnLoginSuccess = true,
+                    showPleaseLogInTitle = true
+                  )
+                )
             }
           }
           CatalogFeedOwnership.CollectedFromAccounts -> {
@@ -929,7 +931,6 @@ class CatalogFragmentFeed : Fragment() {
     facetLayout: LinearLayout,
     facetsByGroup: Map<String, List<FeedFacet>>
   ) {
-
     /*
      * If the facet groups are empty, hide the header entirely.
      */
@@ -1155,24 +1156,19 @@ class CatalogFragmentFeed : Fragment() {
 
   private fun errorPageParameters(
     failure: FeedLoaderFailure
-  ): ErrorPageParameters<FeedLoaderFailure> {
-    val step =
-      TaskStep(
-        description = this.resources.getString(R.string.catalogFeedLoading),
-        resolution =
-        TaskStepResolution.TaskStepFailed(
-          message = failure.message,
-          errorValue = failure,
-          exception = failure.exception
-        )
-      )
+  ): ErrorPageParameters {
+    val taskRecorder = TaskRecorder.create()
+    taskRecorder.beginNewStep(this.resources.getString(R.string.catalogFeedLoading))
+    taskRecorder.addAttributes(failure.attributes)
+    taskRecorder.currentStepFailed(failure.message, "feedLoadingFailed", failure.exception)
+    val taskFailure = taskRecorder.finishFailure<Unit>()
 
     return ErrorPageParameters(
       emailAddress = this.configurationService.supportErrorReportEmailAddress,
       body = "",
       subject = this.configurationService.supportErrorReportSubject,
-      attributes = failure.attributes.toSortedMap(),
-      taskSteps = listOf(step)
+      attributes = taskFailure.attributes.toSortedMap(),
+      taskSteps = taskFailure.steps
     )
   }
 }

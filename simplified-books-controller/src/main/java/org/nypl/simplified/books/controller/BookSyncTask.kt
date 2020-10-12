@@ -111,9 +111,12 @@ class BookSyncTask(
     }
 
     val newProviderResult =
-      this.accountRegistry.resolve({ accountProvider, message ->
-        this.logger.debug("[{}]: {}", accountProvider, message)
-      }, newDescription)
+      this.accountRegistry.resolve(
+        { accountProvider, message ->
+          this.logger.debug("[{}]: {}", accountProvider, message)
+        },
+        newDescription
+      )
 
     return when (newProviderResult) {
       is TaskResult.Success -> {
@@ -122,11 +125,7 @@ class BookSyncTask(
         newProviderResult.result
       }
       is TaskResult.Failure -> {
-        this.logger.error("failed to resolve account provider")
-        newProviderResult.errors()
-          .forEach {
-            this.logger.error("account provider resolution: {}: ", it.message, it.exception)
-          }
+        this.logger.error("failed to resolve account provider: ", newProviderResult.exception)
         oldProvider
       }
     }
@@ -148,7 +147,6 @@ class BookSyncTask(
     result: HTTPResultOKType<InputStream>,
     provider: AccountProviderType
   ) {
-
     val feed = this.feedParser.parse(provider.loansURI, result.value)
     this.updateAnnotations(feed)
 
@@ -233,10 +231,10 @@ class BookSyncTask(
 
       val newAccountProvider =
         AccountProvider.copy(this.account.provider)
-        .copy(
-          annotationsURI = (feed.annotations as Some<URI>).get(),
-          updated = DateTime.now()
-        )
+          .copy(
+            annotationsURI = (feed.annotations as Some<URI>).get(),
+            updated = DateTime.now()
+          )
       Preconditions.checkArgument(
         newAccountProvider.supportsSimplyESynchronization,
         "Support for syncing must now be enabled"
@@ -263,7 +261,6 @@ class BookSyncTask(
     result: HTTPResultError<InputStream>,
     provider: AccountProviderType
   ) {
-
     if (result.status == HttpURLConnection.HTTP_UNAUTHORIZED) {
       this.logger.debug("removing credentials due to 401 server response")
       this.account.setLoginState(AccountLoginState.AccountNotLoggedIn)

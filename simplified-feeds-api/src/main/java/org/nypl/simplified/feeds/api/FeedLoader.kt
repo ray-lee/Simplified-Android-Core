@@ -1,7 +1,5 @@
 package org.nypl.simplified.feeds.api
 
-import android.content.ContentResolver
-import android.net.Uri
 import com.google.common.util.concurrent.FluentFuture
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListeningExecutorService
@@ -13,12 +11,24 @@ import org.nypl.simplified.accounts.api.AccountID
 import org.nypl.simplified.books.book_registry.BookRegistryReadableType
 import org.nypl.simplified.books.bundled.api.BundledContentResolverType
 import org.nypl.simplified.books.bundled.api.BundledURIs
+import org.nypl.simplified.books.formats.api.BookFormatSupportType
+import org.nypl.simplified.content.api.ContentResolverType
 import org.nypl.simplified.feeds.api.Feed.FeedWithGroups
 import org.nypl.simplified.feeds.api.Feed.FeedWithoutGroups
 import org.nypl.simplified.feeds.api.FeedLoaderResult.FeedLoaderFailure
 import org.nypl.simplified.feeds.api.FeedLoaderResult.FeedLoaderSuccess
 import org.nypl.simplified.http.core.HTTPAuthType
+import org.nypl.simplified.opds.core.OPDSAcquisition
+import org.nypl.simplified.opds.core.OPDSAcquisition.Relation.ACQUISITION_BORROW
+import org.nypl.simplified.opds.core.OPDSAcquisition.Relation.ACQUISITION_BUY
+import org.nypl.simplified.opds.core.OPDSAcquisition.Relation.ACQUISITION_GENERIC
+import org.nypl.simplified.opds.core.OPDSAcquisition.Relation.ACQUISITION_OPEN_ACCESS
+import org.nypl.simplified.opds.core.OPDSAcquisition.Relation.ACQUISITION_SAMPLE
+import org.nypl.simplified.opds.core.OPDSAcquisition.Relation.ACQUISITION_SUBSCRIBE
 import org.nypl.simplified.opds.core.OPDSAcquisitionFeed
+import org.nypl.simplified.opds.core.OPDSAcquisitionFeedEntry
+import org.nypl.simplified.opds.core.OPDSAcquisitionPath
+import org.nypl.simplified.opds.core.OPDSAcquisitionPaths
 import org.nypl.simplified.opds.core.OPDSFeedParserType
 import org.nypl.simplified.opds.core.OPDSFeedTransportType
 import org.nypl.simplified.opds.core.OPDSOpenSearch1_1
@@ -30,6 +40,7 @@ import java.net.URI
 import java.util.SortedMap
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The default implementation of the [FeedLoaderType] interface.
@@ -39,14 +50,15 @@ import java.util.concurrent.TimeUnit
  */
 
 class FeedLoader private constructor(
+  private val bookFormatSupport: BookFormatSupportType,
+  private val bookRegistry: BookRegistryReadableType,
+  private val bundledContent: BundledContentResolverType,
   private val cache: ExpiringMap<URI, Feed>,
-  private val contentResolver: ContentResolver,
+  private val contentResolver: ContentResolverType,
   private val exec: ListeningExecutorService,
   private val parser: OPDSFeedParserType,
   private val searchParser: OPDSSearchParserType,
-  private val transport: OPDSFeedTransportType<OptionType<HTTPAuthType>>,
-  private val bookRegistry: BookRegistryReadableType,
-  private val bundledContent: BundledContentResolverType
+  private val transport: OPDSFeedTransportType<OptionType<HTTPAuthType>>
 ) : FeedLoaderType, ExpirationListener<URI, Feed> {
 
   init {
@@ -61,22 +73,38 @@ class FeedLoader private constructor(
     auth: OptionType<HTTPAuthType>,
     updateFromRegistry: Boolean
   ): FluentFuture<FeedLoaderResult> {
-
     if (this.cache.containsKey(uri)) {
-      return FluentFuture.from(Futures.immediateFuture(
-        FeedLoaderSuccess(this.cache[uri]!!) as FeedLoaderResult))
+      return FluentFuture.from(
+        Futures.immediateFuture(
+          FeedLoaderSuccess(this.cache[uri]!!) as FeedLoaderResult
+        )
+      )
     }
 
-    return FluentFuture.from(this.exec.submit(Callable {
-      this.fetchSynchronously(
-        accountId = accountId,
-        uri = uri,
-        auth = auth,
-        method = "GET",
-        updateFromRegistry = updateFromRegistry
+    return FluentFuture.from(
+      this.exec.submit(
+        Callable {
+          this.fetchSynchronously(
+            accountId = accountId,
+            uri = uri,
+            auth = auth,
+            method = "GET",
+            updateFromRegistry = updateFromRegistry
+          )
+        }
       )
-    }))
+    )
   }
+
+  private val filterFlag =
+    AtomicBoolean(true)
+
+  override var showOnlySupportedBooks: Boolean
+    get() = this.filterFlag.get()
+    set(value) {
+      this.filterFlag.set(value)
+      this.cache.clear()
+    }
 
   override fun fetchURI(
     accountId: AccountID,
@@ -127,6 +155,35 @@ class FeedLoader private constructor(
     this.log.debug("expired feed: {}", key)
   }
 
+  private fun isEntrySupported(
+    entry: OPDSAcquisitionFeedEntry
+  ): Boolean {
+    if (!this.showOnlySupportedBooks) {
+      return true
+    }
+
+    val linearizedPaths = OPDSAcquisitionPaths.linearize(entry)
+    for (path in linearizedPaths) {
+      if (this.isRelationSupported(path.source.relation) && this.isTypePathSupported(path)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  private fun isRelationSupported(relation: OPDSAcquisition.Relation): Boolean =
+    when (relation) {
+      ACQUISITION_BORROW -> true
+      ACQUISITION_BUY -> false
+      ACQUISITION_GENERIC -> true
+      ACQUISITION_OPEN_ACCESS -> true
+      ACQUISITION_SAMPLE -> false
+      ACQUISITION_SUBSCRIBE -> false
+    }
+
+  private fun isTypePathSupported(path: OPDSAcquisitionPath) =
+    this.bookFormatSupport.isSupportedPath(path.asMIMETypes())
+
   private fun fetchSynchronously(
     accountId: AccountID,
     uri: URI,
@@ -134,9 +191,7 @@ class FeedLoader private constructor(
     method: String,
     updateFromRegistry: Boolean
   ): FeedLoaderResult {
-
     try {
-
       /*
        * If the URI has a scheme that refers to bundled content, fetch the data from
        * the resolver instead.
@@ -164,7 +219,12 @@ class FeedLoader private constructor(
       val search =
         this.fetchSearchLink(opdsFeed, auth, method)
       val feed =
-        Feed.fromAcquisitionFeed(accountId, opdsFeed, search)
+        Feed.fromAcquisitionFeed(
+          accountId = accountId,
+          feed = opdsFeed,
+          filter = this::isEntrySupported,
+          search = search
+        )
 
       /*
        * Replace entries in the feed with those from the book registry, if requested.
@@ -184,7 +244,8 @@ class FeedLoader private constructor(
           problemReport = this.someOrNull(e.problemReport),
           exception = e,
           attributesInitial = this.errorAttributesOf(uri, method),
-          message = e.localizedMessage)
+          message = e.localizedMessage
+        )
       }
       return FeedLoaderFailure.FeedLoaderFailedGeneral(
         problemReport = this.someOrNull(e.problemReport),
@@ -208,14 +269,17 @@ class FeedLoader private constructor(
     accountId: AccountID,
     uri: URI
   ): FeedLoaderResult {
-    val streamMaybe = this.contentResolver.openInputStream(Uri.parse(uri.toString()))
+    val streamMaybe = this.contentResolver.openInputStream(uri)
     return if (streamMaybe != null) {
       streamMaybe.use { stream ->
-        FeedLoaderSuccess(Feed.fromAcquisitionFeed(
-          accountId = accountId,
-          feed = this.parser.parse(uri, stream),
-          search = null
-        ))
+        FeedLoaderSuccess(
+          Feed.fromAcquisitionFeed(
+            accountId = accountId,
+            feed = this.parser.parse(uri, stream),
+            search = null,
+            filter = this::isEntrySupported
+          )
+        )
       }
     } else {
       FeedLoaderFailure.FeedLoaderFailedGeneral(
@@ -252,7 +316,14 @@ class FeedLoader private constructor(
     uri: URI
   ): FeedLoaderSuccess {
     return this.bundledContent.resolve(uri).use { stream ->
-      FeedLoaderSuccess(Feed.fromAcquisitionFeed(accountId, this.parser.parse(uri, stream), null))
+      FeedLoaderSuccess(
+        Feed.fromAcquisitionFeed(
+          accountId = accountId,
+          feed = this.parser.parse(uri, stream),
+          filter = this::isEntrySupported,
+          search = null
+        )
+      )
     }
   }
 
@@ -301,10 +372,13 @@ class FeedLoader private constructor(
             val bookWithStatus = this.bookRegistry.books().get(id)
             if (bookWithStatus != null) {
               this.log.debug("updating entry {} from book registry", id)
-              entries.set(gi, FeedEntry.FeedEntryOPDS(
-                accountID = bookWithStatus.book.account,
-                feedEntry = bookWithStatus.book.entry
-              ))
+              entries.set(
+                gi,
+                FeedEntry.FeedEntryOPDS(
+                  accountID = bookWithStatus.book.account,
+                  feedEntry = bookWithStatus.book.entry
+                )
+              )
             }
           }
         }
@@ -319,7 +393,8 @@ class FeedLoader private constructor(
      */
 
     fun create(
-      contentResolver: ContentResolver,
+      bookFormatSupport: BookFormatSupportType,
+      contentResolver: ContentResolverType,
       exec: ListeningExecutorService,
       parser: OPDSFeedParserType,
       searchParser: OPDSSearchParserType,
@@ -327,7 +402,6 @@ class FeedLoader private constructor(
       bookRegistry: BookRegistryReadableType,
       bundledContent: BundledContentResolverType
     ): FeedLoaderType {
-
       val cache =
         ExpiringMap.builder()
           .expirationPolicy(ExpiringMap.ExpirationPolicy.CREATED)
@@ -335,14 +409,15 @@ class FeedLoader private constructor(
           .build<URI, Feed>()
 
       return FeedLoader(
+        bookFormatSupport = bookFormatSupport,
+        bookRegistry = bookRegistry,
+        bundledContent = bundledContent,
         cache = cache,
         contentResolver = contentResolver,
         exec = exec,
         parser = parser,
         searchParser = searchParser,
-        transport = transport,
-        bookRegistry = bookRegistry,
-        bundledContent = bundledContent
+        transport = transport
       )
     }
   }

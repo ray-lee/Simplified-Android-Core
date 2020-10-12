@@ -6,13 +6,10 @@ import com.google.common.base.Preconditions
 import io.reactivex.subjects.Subject
 import org.nypl.simplified.accounts.api.AccountAuthenticationCredentialsStoreType
 import org.nypl.simplified.accounts.api.AccountBundledCredentialsType
-import org.nypl.simplified.accounts.api.AccountCreateErrorDetails
-import org.nypl.simplified.accounts.api.AccountCreateErrorDetails.AccountProviderResolutionFailed
 import org.nypl.simplified.accounts.api.AccountEvent
 import org.nypl.simplified.accounts.api.AccountEventCreation.AccountEventCreationFailed
 import org.nypl.simplified.accounts.api.AccountEventCreation.AccountEventCreationInProgress
 import org.nypl.simplified.accounts.api.AccountLoginState
-import org.nypl.simplified.accounts.api.AccountProviderResolutionErrorDetails
 import org.nypl.simplified.accounts.api.AccountProviderType
 import org.nypl.simplified.accounts.database.api.AccountsDatabaseException
 import org.nypl.simplified.accounts.database.api.AccountsDatabaseFactoryType
@@ -34,8 +31,6 @@ import org.nypl.simplified.profiles.api.ProfilesDatabaseType
 import org.nypl.simplified.profiles.api.ProfilesDatabaseType.AnonymousProfileEnabled.ANONYMOUS_PROFILE_ENABLED
 import org.nypl.simplified.reader.api.ReaderPreferences
 import org.nypl.simplified.taskrecorder.api.TaskResult
-import org.nypl.simplified.taskrecorder.api.TaskStep
-import org.nypl.simplified.taskrecorder.api.TaskStepResolution
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
@@ -76,7 +71,6 @@ object ProfilesDatabases {
     accountsDatabases: AccountsDatabaseFactoryType,
     directory: File
   ): ProfilesDatabaseType {
-
     this.logger.debug("opening profile database: {}", directory)
 
     val profiles = ConcurrentSkipListMap<ProfileID, Profile>()
@@ -136,7 +130,6 @@ object ProfilesDatabases {
     jom: ObjectMapper,
     errors: MutableList<Exception>
   ) {
-
     if (!directory.exists()) {
       directory.mkdirs()
     }
@@ -186,7 +179,6 @@ object ProfilesDatabases {
     accountsDatabases: AccountsDatabaseFactoryType,
     directory: File
   ): ProfilesDatabaseType {
-
     this.logger.debug("opening profile database: {}", directory)
 
     val profiles = ConcurrentSkipListMap<ProfileID, Profile>()
@@ -254,7 +246,6 @@ object ProfilesDatabases {
     directory: File,
     profileIdName: String
   ): ProfileID? {
-
     /*
      * If the profile directory is not a directory, then give up.
      */
@@ -291,7 +282,6 @@ object ProfilesDatabases {
     existingDirectory: File,
     profileIdName: String
   ): ProfileID? {
-
     this.logger.debug("attempting to migrate {} directory", existingDirectory)
 
     if (profileIdName == "0") {
@@ -344,7 +334,6 @@ object ProfilesDatabases {
     errors: MutableList<Exception>,
     profileIdName: String
   ): Profile? {
-
     val profileId =
       this.openOneProfileDirectory(errors, directory, profileIdName) ?: return null
 
@@ -435,7 +424,6 @@ object ProfilesDatabases {
     displayName: String,
     id: ProfileID
   ): Profile {
-
     try {
       val profileDir =
         File(directory, id.uuid.toString())
@@ -515,7 +503,6 @@ object ProfilesDatabases {
     accountProviders: AccountProviderRegistryType,
     profile: ProfileID
   ) {
-
     val pId = profile.uuid
     this.logger.debug("[{}]: creating automatic accounts", pId)
 
@@ -576,9 +563,12 @@ object ProfilesDatabases {
         )
 
         val resolutionResult =
-          accountProviders.resolve({ _, message ->
-            accountEvents.onNext(AccountEventCreationInProgress(message))
-          }, description)
+          accountProviders.resolve(
+            { _, message ->
+              accountEvents.onNext(AccountEventCreationInProgress(message))
+            },
+            description
+          )
 
         when (resolutionResult) {
           is TaskResult.Success -> {
@@ -610,30 +600,15 @@ object ProfilesDatabases {
 
   private fun publishResolutionError(
     accountEvents: Subject<AccountEvent>,
-    resolutionResult: TaskResult.Failure<AccountProviderResolutionErrorDetails, AccountProviderType>
+    resolutionResult: TaskResult.Failure<AccountProviderType>
   ) {
-    val error =
-      AccountProviderResolutionFailed(resolutionResult.errors())
-
-    val failure =
-      TaskResult.Failure<AccountCreateErrorDetails, Any>(
-        listOf(
-          TaskStep<AccountCreateErrorDetails>(
-            description = "",
-            resolution = TaskStepResolution.TaskStepFailed(
-              error.message, error, error.exception
-            )
-          )
-        )
+    val failure: TaskResult.Failure<Any> =
+      TaskResult.Failure(
+        steps = resolutionResult.steps,
+        attributes = resolutionResult.attributes
       )
 
-    val accountEvent =
-      AccountEventCreationFailed(
-        message = resolutionResult.steps.last().resolution.message,
-        taskResult = failure
-      )
-
-    accountEvents.onNext(accountEvent)
+    accountEvents.onNext(AccountEventCreationFailed(failure))
   }
 
   @Throws(IOException::class)
@@ -641,7 +616,6 @@ object ProfilesDatabases {
     directory: File,
     newDescription: ProfileDescription
   ) {
-
     val profileLock =
       File(directory, "lock")
     val profileFile =
@@ -653,7 +627,6 @@ object ProfilesDatabases {
       profileLock,
       1000L
     ) {
-
       /*
        * Ignore the return value here; the write call will immediately fail if this
        * call fails anyway.

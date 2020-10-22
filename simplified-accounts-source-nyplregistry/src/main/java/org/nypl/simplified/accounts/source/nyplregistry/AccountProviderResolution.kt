@@ -238,7 +238,7 @@ class AccountProviderResolution(
   }
 
   private fun extractAuthenticationDescriptionSAML20(
-    taskRecorder: TaskRecorderType<AccountProviderResolutionErrorDetails>,
+    taskRecorder: TaskRecorderType,
     authObject: AuthenticationObject
   ): AccountProviderAuthenticationDescription {
     val authenticate =
@@ -249,11 +249,7 @@ class AccountProviderResolution(
     val authenticateURI = authenticate?.hrefURI
     if (authenticateURI == null) {
       val message = this.stringResources.resolvingAuthDocumentSAML20Malformed
-      taskRecorder.currentStepFailed(message, AuthDocumentUnusable(
-        message = message,
-        accountProviderID = this.description.id.toASCIIString(),
-        accountProviderTitle = this.description.title
-      ))
+      taskRecorder.currentStepFailed(message, authDocumentUnusable(this.description))
       throw IOException(message)
     }
 

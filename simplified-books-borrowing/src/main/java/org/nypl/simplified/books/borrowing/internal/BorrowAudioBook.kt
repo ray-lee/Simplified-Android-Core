@@ -88,6 +88,8 @@ class BorrowAudioBook private constructor() : BorrowSubtaskType {
             )
           is AccountAuthenticationCredentials.OAuthWithIntermediary ->
             AudioBookCredentials.BearerToken(accessToken = credentials.accessToken)
+          is AccountAuthenticationCredentials.SAML2_0 ->
+            AudioBookCredentials.BearerToken(accessToken = credentials.accessToken)
         }
       }
 

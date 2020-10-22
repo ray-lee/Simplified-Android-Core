@@ -84,6 +84,8 @@ object BorrowHTTP {
             )
           is AccountAuthenticationCredentials.OAuthWithIntermediary ->
             LSHTTPAuthorizationBearerToken.ofToken(creds.accessToken)
+          is AccountAuthenticationCredentials.SAML2_0 ->
+            LSHTTPAuthorizationBearerToken.ofToken(creds.accessToken)
         }
       }
       AccountNotLoggedIn,

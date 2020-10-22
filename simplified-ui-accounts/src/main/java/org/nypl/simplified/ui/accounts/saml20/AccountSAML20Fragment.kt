@@ -12,8 +12,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import io.reactivex.disposables.CompositeDisposable
 import org.librarysimplified.services.api.Services
-import org.nypl.simplified.accounts.api.AccountLoginState.AccountLoginErrorData
-import org.nypl.simplified.accounts.api.AccountLoginState.AccountLoginErrorData.AccountLoginMissingInformation
+import org.nypl.simplified.accounts.database.api.AccountType
 import org.nypl.simplified.buildconfig.api.BuildConfigurationServiceType
 import org.nypl.simplified.navigation.api.NavigationControllers
 import org.nypl.simplified.presentableerror.api.PresentableErrorType
@@ -147,15 +146,15 @@ class AccountSAML20Fragment : Fragment() {
 
   private fun makeLoginTaskSteps(
     message: String
-  ): List<TaskStep<AccountLoginErrorData>> {
-    val taskRecorder = TaskRecorder.create<AccountLoginErrorData>()
+  ): List<TaskStep> {
+    val taskRecorder = TaskRecorder.create()
     taskRecorder.beginNewStep("Started SAML 2.0 login...")
-    taskRecorder.currentStepFailed(message, AccountLoginMissingInformation(message), null)
-    return taskRecorder.finishFailure<AccountLoginErrorData>().steps
+    taskRecorder.currentStepFailed(message, "samlAccountCreationFailed")
+    return taskRecorder.finishFailure<AccountType>().steps
   }
 
   @UiThread
-  private fun <E : PresentableErrorType> showErrorPage(taskSteps: List<TaskStep<E>>) {
+  private fun showErrorPage(taskSteps: List<TaskStep>) {
     this.uiThread.checkIsUIThread()
 
     val parameters =

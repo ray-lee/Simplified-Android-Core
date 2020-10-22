@@ -138,7 +138,7 @@ class ProfileAccountLoginTask(
 
   private fun runSAML20Cancel(
     request: SAML20Cancel
-  ): TaskResult<AccountLoginErrorData, Unit> {
+  ): TaskResult<Unit> {
     this.steps.beginNewStep("Cancelling login...")
     return when (this.account.loginState) {
       is AccountLoggingIn,
@@ -162,7 +162,7 @@ class ProfileAccountLoginTask(
 
   private fun runSAML20Complete(
     request: SAML20Complete
-  ): TaskResult<AccountLoginErrorData, Unit> {
+  ): TaskResult<Unit> {
     this.steps.beginNewStep("Accepting login token...")
     return when (this.account.loginState) {
       is AccountLoggingIn,
@@ -176,7 +176,7 @@ class ProfileAccountLoginTask(
             cookies = request.cookies
           )
 
-        this.runPatronProfileRequest()
+        this.handlePatronUserProfile()
         this.runDeviceActivation()
         this.account.setLoginState(AccountLoggedIn(this.credentials))
         this.steps.finishSuccess(Unit)
@@ -197,7 +197,7 @@ class ProfileAccountLoginTask(
 
   private fun runSAML20Initiate(
     request: SAML20Initiate
-  ): TaskResult<AccountLoginErrorData, Unit> {
+  ): TaskResult<Unit> {
     this.account.setLoginState(
       AccountLoggingInWaitingForExternalAuthentication(
         description = request.description,

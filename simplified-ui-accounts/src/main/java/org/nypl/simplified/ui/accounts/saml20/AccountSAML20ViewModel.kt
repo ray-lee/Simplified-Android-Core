@@ -74,7 +74,6 @@ class AccountSAML20ViewModel(
       view: WebView,
       url: String
     ): Boolean {
-
       /*
        * We don't know which cookies we need, so we keep them all.
        */
@@ -105,23 +104,29 @@ class AccountSAML20ViewModel(
         }
 
         this.logger.debug("obtained access token")
-        this.authInfo.set(AuthInfo(
-          token = accessToken,
-          patronInfo = patronInfo,
-          cookies = this.cookies.toSet()
-        ))
+        this.authInfo.set(
+          AuthInfo(
+            token = accessToken,
+            patronInfo = patronInfo,
+            cookies = this.cookies.toSet()
+          )
+        )
 
-        this.profiles.profileAccountLogin(ProfileAccountLoginRequest.SAML20Complete(
-          accountId = this.account,
-          accessToken = accessToken,
-          patronInfo = patronInfo,
-          cookies = this.cookies.toSet()
-        ))
-        this.eventSubject.onNext(AccountSAML20Event.AccessTokenObtained(
-          token = accessToken,
-          patronInfo = patronInfo,
-          cookies = cookies
-        ))
+        this.profiles.profileAccountLogin(
+          ProfileAccountLoginRequest.SAML20Complete(
+            accountId = this.account,
+            accessToken = accessToken,
+            patronInfo = patronInfo,
+            cookies = this.cookies.toSet()
+          )
+        )
+        this.eventSubject.onNext(
+          AccountSAML20Event.AccessTokenObtained(
+            token = accessToken,
+            patronInfo = patronInfo,
+            cookies = cookies
+          )
+        )
         return true
       }
       return false
@@ -133,10 +138,12 @@ class AccountSAML20ViewModel(
 
     if (this.authInfo.get() == null) {
       this.logger.debug("no access token obtained; cancelling login")
-      this.profiles.profileAccountLogin(ProfileAccountLoginRequest.SAML20Cancel(
-        accountId = this.account,
-        description = this.description
-      ))
+      this.profiles.profileAccountLogin(
+        ProfileAccountLoginRequest.SAML20Cancel(
+          accountId = this.account,
+          description = this.description
+        )
+      )
     }
 
     this.eventSubject.onComplete()

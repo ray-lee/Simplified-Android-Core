@@ -90,20 +90,24 @@ sealed class AccountAuthenticationViewBindings {
     private val logger = LoggerFactory.getLogger(ViewsForBasic::class.java)
 
     private val userTextListener =
-      OnTextChangeListener(onChanged = { _, _, _, _ ->
-        this.onUsernamePasswordChangeListener.invoke(
-          AccountUsername(this.user.text.toString()),
-          AccountPassword(this.pass.text.toString())
-        )
-      })
+      OnTextChangeListener(
+        onChanged = { _, _, _, _ ->
+          this.onUsernamePasswordChangeListener.invoke(
+            AccountUsername(this.user.text.toString()),
+            AccountPassword(this.pass.text.toString())
+          )
+        }
+      )
 
     private val passTextListener =
-      OnTextChangeListener(onChanged = { _, _, _, _ ->
-        this.onUsernamePasswordChangeListener.invoke(
-          AccountUsername(this.user.text.toString()),
-          AccountPassword(this.pass.text.toString())
-        )
-      })
+      OnTextChangeListener(
+        onChanged = { _, _, _, _ ->
+          this.onUsernamePasswordChangeListener.invoke(
+            AccountUsername(this.user.text.toString()),
+            AccountPassword(this.pass.text.toString())
+          )
+        }
+      )
 
     init {
 
@@ -333,7 +337,8 @@ sealed class AccountAuthenticationViewBindings {
     fun configureFor(description: AccountProviderAuthenticationDescription.SAML2_0) {
       this.loginText =
         this.viewGroup.context.resources.getString(
-          R.string.accountLoginWith, description.description)
+          R.string.accountLoginWith, description.description
+        )
       this.loginButton.text = this.loginText
     }
 

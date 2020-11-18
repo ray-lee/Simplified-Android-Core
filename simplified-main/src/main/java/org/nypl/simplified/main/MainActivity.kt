@@ -49,6 +49,7 @@ import org.nypl.simplified.threads.NamedThreadPools
 import org.nypl.simplified.ui.accounts.AccountFragmentParameters
 import org.nypl.simplified.ui.accounts.AccountNavigationControllerType
 import org.nypl.simplified.ui.accounts.AccountRegistryFragment
+import org.nypl.simplified.ui.accounts.saml20.AccountSAML20FragmentParameters
 import org.nypl.simplified.ui.branding.BrandingSplashServiceType
 import org.nypl.simplified.ui.catalog.CatalogNavigationControllerType
 import org.nypl.simplified.ui.errorpage.ErrorPageListenerType
@@ -481,6 +482,10 @@ class MainActivity :
         }
 
         override fun openErrorPage(parameters: ErrorPageParameters) {
+          throw UnreachableCodeException()
+        }
+
+        override fun openSAML20Login(parameters: AccountSAML20FragmentParameters) {
           throw UnreachableCodeException()
         }
 

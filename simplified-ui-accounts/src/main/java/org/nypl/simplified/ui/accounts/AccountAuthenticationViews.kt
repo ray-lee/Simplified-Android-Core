@@ -35,16 +35,20 @@ class AccountAuthenticationViews(
 
   private val anonymous: ViewsForAnonymous =
     ViewsForAnonymous.bind(
-      this.viewGroup.findViewById(R.id.authAnon))
+      this.viewGroup.findViewById(R.id.authAnon)
+    )
   private val oAuthWithIntermediary: ViewsForOAuthWithIntermediary =
     ViewsForOAuthWithIntermediary.bind(
-      this.viewGroup.findViewById(R.id.authOAuthIntermediary))
+      this.viewGroup.findViewById(R.id.authOAuthIntermediary)
+    )
   private val saml20: ViewsForSAML2_0 =
     ViewsForSAML2_0.bind(
-      this.viewGroup.findViewById(R.id.authSAML))
+      this.viewGroup.findViewById(R.id.authSAML)
+    )
   private val coppa: ViewsForCOPPAAgeGate =
     ViewsForCOPPAAgeGate.bind(
-      this.viewGroup.findViewById(R.id.authCOPPA))
+      this.viewGroup.findViewById(R.id.authCOPPA)
+    )
 
   private val viewGroups =
     listOf<AccountAuthenticationViewBindings>(

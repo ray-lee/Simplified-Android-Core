@@ -15,7 +15,6 @@ import org.librarysimplified.services.api.Services
 import org.nypl.simplified.accounts.database.api.AccountType
 import org.nypl.simplified.buildconfig.api.BuildConfigurationServiceType
 import org.nypl.simplified.navigation.api.NavigationControllers
-import org.nypl.simplified.presentableerror.api.PresentableErrorType
 import org.nypl.simplified.profiles.controller.api.ProfilesControllerType
 import org.nypl.simplified.taskrecorder.api.TaskRecorder
 import org.nypl.simplified.taskrecorder.api.TaskStep
@@ -95,18 +94,23 @@ class AccountSAML20Fragment : Fragment() {
     super.onStart()
 
     this.viewModel =
-      ViewModelProviders.of(this, AccountSAML20ViewModelFactory(
-        profiles = this.profiles,
-        account = this.parameters.accountID,
-        description = this.parameters.authenticationDescription,
-        resources = this.resources
-      )).get(AccountSAML20ViewModel::class.java)
+      ViewModelProviders.of(
+        this,
+        AccountSAML20ViewModelFactory(
+          profiles = this.profiles,
+          account = this.parameters.accountID,
+          description = this.parameters.authenticationDescription,
+          resources = this.resources
+        )
+      ).get(AccountSAML20ViewModel::class.java)
 
-    this.eventSubscriptions.add(this.viewModel.events.subscribe(
-      this::onSAMLEvent,
-      this::onSAMLEventException,
-      this::onSAMLEventFinished
-    ))
+    this.eventSubscriptions.add(
+      this.viewModel.events.subscribe(
+        this::onSAMLEvent,
+        this::onSAMLEventException,
+        this::onSAMLEventFinished
+      )
+    )
 
     this.webView.webChromeClient = AccountSAML20ChromeClient(this.progress)
     this.webView.webViewClient = this.viewModel.webViewClient

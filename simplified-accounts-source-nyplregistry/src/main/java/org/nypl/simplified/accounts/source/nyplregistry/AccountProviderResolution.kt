@@ -219,7 +219,8 @@ class AccountProviderResolution(
         }
         SAML_2_0_TYPE -> {
           authObjects.add(
-            this.extractAuthenticationDescriptionSAML20(taskRecorder, authObject))
+            this.extractAuthenticationDescriptionSAML20(taskRecorder, authObject)
+          )
         }
         else -> {
           this.logger.warn("encountered unrecognized authentication type: {}", authType)

@@ -1,5 +1,6 @@
 package org.nypl.simplified.ui.accounts.saml20
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -100,7 +101,8 @@ class AccountSAML20Fragment : Fragment() {
           profiles = this.profiles,
           account = this.parameters.accountID,
           description = this.parameters.authenticationDescription,
-          resources = this.resources
+          resources = this.resources,
+          webViewDataDir = this.requireContext().getDir("webview", Context.MODE_PRIVATE)
         )
       ).get(AccountSAML20ViewModel::class.java)
 
@@ -115,16 +117,29 @@ class AccountSAML20Fragment : Fragment() {
     this.webView.webChromeClient = AccountSAML20ChromeClient(this.progress)
     this.webView.webViewClient = this.viewModel.webViewClient
     this.webView.settings.javaScriptEnabled = true
+
+    if (this.viewModel.isWebViewClientReady) {
+      this.loadLoginPage()
+    }
+  }
+
+  private fun loadLoginPage() {
     this.webView.loadUrl(this.constructLoginURI())
   }
 
   private fun onSAMLEvent(event: AccountSAML20Event) {
     return when (event) {
+      is AccountSAML20Event.WebViewClientReady ->
+        this.onWebViewClientReady()
       is AccountSAML20Event.Failed ->
         this.onSAMLEventFailed(event)
       is AccountSAML20Event.AccessTokenObtained ->
         this.onSAMLEventAccessTokenObtained()
     }
+  }
+
+  private fun onWebViewClientReady() {
+    this.loadLoginPage()
   }
 
   private fun onSAMLEventAccessTokenObtained() {

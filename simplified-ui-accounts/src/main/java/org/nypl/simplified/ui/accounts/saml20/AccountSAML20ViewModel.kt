@@ -9,13 +9,16 @@ import android.webkit.WebViewClient
 import androidx.lifecycle.ViewModel
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
+import org.nypl.simplified.accounts.api.AccountCookie
 import org.nypl.simplified.accounts.api.AccountID
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription
 import org.nypl.simplified.profiles.controller.api.ProfileAccountLoginRequest
 import org.nypl.simplified.profiles.controller.api.ProfilesControllerType
 import org.nypl.simplified.ui.accounts.R
+import org.nypl.simplified.webview.WebViewCookieDatabase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -26,7 +29,8 @@ class AccountSAML20ViewModel(
   private val profiles: ProfilesControllerType,
   private val account: AccountID,
   private val description: AccountProviderAuthenticationDescription.SAML2_0,
-  private val resources: Resources
+  private val resources: Resources,
+  private val webViewDataDir: File
 ) : ViewModel() {
 
   private val logger =
@@ -39,7 +43,7 @@ class AccountSAML20ViewModel(
   private data class AuthInfo(
     val token: String,
     val patronInfo: String,
-    val cookies: Set<String>
+    val cookies: List<AccountCookie>
   )
 
   val events: Observable<AccountSAML20Event> =
@@ -51,10 +55,30 @@ class AccountSAML20ViewModel(
     private val eventSubject: PublishSubject<AccountSAML20Event>,
     private val authInfo: AtomicReference<AuthInfo>,
     private val profiles: ProfilesControllerType,
-    private val account: AccountID
+    private val account: AccountID,
+    private val webViewDataDir: File
   ) : WebViewClient() {
 
-    private val cookies = mutableSetOf<String>()
+    var isReady = false
+
+    init {
+      /*
+       * The web view may be harboring session cookies that are still valid, which could make the
+       * login page go straight through to the success redirect when loaded. Since we're trying to
+       * do a fresh log in, we need to make sure existing session cookies are not sent. We don't
+       * know which cookies are which, so they all need to be removed.
+       */
+
+      CookieManager.getInstance().removeAllCookies(this::onCookiesRemoved)
+    }
+
+    private fun onCookiesRemoved(value: Boolean) {
+      isReady = true
+
+      this.eventSubject.onNext(
+        AccountSAML20Event.WebViewClientReady()
+      )
+    }
 
     override fun shouldOverrideUrlLoading(
       view: WebView,
@@ -74,16 +98,6 @@ class AccountSAML20ViewModel(
       view: WebView,
       url: String
     ): Boolean {
-      /*
-       * We don't know which cookies we need, so we keep them all.
-       */
-
-      val cookieManager = CookieManager.getInstance()
-      val cookie = cookieManager.getCookie(url)
-      if (cookie != null) {
-        this.cookies.add(cookie)
-      }
-
       if (url.startsWith(AccountSAML20.callbackURI)) {
         val parsed = Uri.parse(url)
 
@@ -103,12 +117,14 @@ class AccountSAML20ViewModel(
           return true
         }
 
+        val cookies = this.dumpWebViewCookies()
+
         this.logger.debug("obtained access token")
         this.authInfo.set(
           AuthInfo(
             token = accessToken,
             patronInfo = patronInfo,
-            cookies = this.cookies.toSet()
+            cookies = cookies
           )
         )
 
@@ -117,7 +133,7 @@ class AccountSAML20ViewModel(
             accountId = this.account,
             accessToken = accessToken,
             patronInfo = patronInfo,
-            cookies = this.cookies.toSet()
+            cookies = cookies
           )
         )
         this.eventSubject.onNext(
@@ -130,6 +146,19 @@ class AccountSAML20ViewModel(
         return true
       }
       return false
+    }
+
+    private fun dumpWebViewCookies(): List<AccountCookie> {
+      CookieManager.getInstance().flush()
+
+      return WebViewCookieDatabase(this.webViewDataDir).use {
+        it.getAll().map { webViewCookie ->
+          AccountCookie(
+            url = webViewCookie.hostKey,
+            value = webViewCookie.toSetCookieString()
+          )
+        }
+      }
     }
   }
 
@@ -156,6 +185,10 @@ class AccountSAML20ViewModel(
       logger = this.logger,
       profiles = this.profiles,
       resources = this.resources,
-      authInfo = this.authInfo
+      authInfo = this.authInfo,
+      webViewDataDir = this.webViewDataDir
     )
+
+  val isWebViewClientReady: Boolean
+    get() = (this.webViewClient as AccountSAML20WebClient).isReady
 }

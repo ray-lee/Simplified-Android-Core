@@ -84,7 +84,7 @@ sealed class AccountAuthenticationCredentials {
   data class SAML2_0(
     val accessToken: String,
     val patronInfo: String,
-    val cookies: Set<String>,
+    val cookies: List<AccountCookie>,
     override val adobeCredentials: AccountAuthenticationAdobePreActivationCredentials?,
     override val authenticationDescription: String?
   ) : AccountAuthenticationCredentials() {

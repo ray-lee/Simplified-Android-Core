@@ -1,5 +1,6 @@
 package org.nypl.simplified.profiles.controller.api
 
+import org.nypl.simplified.accounts.api.AccountCookie
 import org.nypl.simplified.accounts.api.AccountID
 import org.nypl.simplified.accounts.api.AccountPassword
 import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription
@@ -74,7 +75,7 @@ sealed class ProfileAccountLoginRequest {
     override val accountId: AccountID,
     val accessToken: String,
     val patronInfo: String,
-    val cookies: Set<String>
+    val cookies: List<AccountCookie>
   ) : ProfileAccountLoginRequest()
 
   /**

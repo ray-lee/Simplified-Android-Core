@@ -4,6 +4,7 @@ import android.content.Context
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
+import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -22,6 +23,7 @@ import org.nypl.simplified.accounts.api.AccountAuthenticationAdobeClientToken
 import org.nypl.simplified.accounts.api.AccountAuthenticationAdobePostActivationCredentials
 import org.nypl.simplified.accounts.api.AccountAuthenticationAdobePreActivationCredentials
 import org.nypl.simplified.accounts.api.AccountAuthenticationCredentials
+import org.nypl.simplified.accounts.api.AccountCookie
 import org.nypl.simplified.accounts.api.AccountID
 import org.nypl.simplified.accounts.api.AccountLoginState
 import org.nypl.simplified.accounts.api.AccountLoginState.AccountLoggedIn
@@ -1624,14 +1626,18 @@ abstract class ProfileAccountLoginTaskContract {
         accountId = this.accountID,
         accessToken = "A TOKEN!",
         patronInfo = "{}",
-        cookies = setOf("cookie0=23; cookie1=24", "cookie2=25")
+        cookies = listOf(
+          AccountCookie("https://example", "cookie0=23"),
+          AccountCookie("https://fake", "cookie1=24; Path=/; Secure"),
+          AccountCookie("http://something", "cookie2=25; Path=/abc; Expires=Wed, 23 Dec 2020 07:28:00 GMT")
+        )
       )
 
     val provider =
       Mockito.mock(AccountProviderType::class.java)
 
     Mockito.`when`(provider.patronSettingsURI)
-      .thenReturn(URI.create("urn:patron"))
+      .thenReturn(this.server.url("patron").toUri())
     Mockito.`when`(provider.authentication)
       .thenReturn(authDescription)
 
@@ -1653,34 +1659,10 @@ abstract class ProfileAccountLoginTaskContract {
     Mockito.`when`(this.account.loginState)
       .then { this.loginState }
 
-    val parser =
-      Mockito.mock(PatronUserProfileParserType::class.java)
-
-    val patronStream =
-      Mockito.mock(InputStream::class.java)
-
-    val profile =
-      PatronUserProfile(
-        settings = PatronSettings(false),
-        drm = listOf(),
-        authorization = null
-      )
-
-    Mockito.`when`(parser.parse())
-      .thenReturn(ParseResult.Success(listOf(), profile))
-    Mockito.`when`(this.patronParsers.createParser(URI.create("urn:patron"), patronStream, false))
-      .thenReturn(parser)
-
-    this.http.addResponse(
-      URI.create("urn:patron"),
-      HTTPResultOK(
-        "OK",
-        200,
-        patronStream,
-        0L,
-        mutableMapOf(),
-        0L
-      ) as HTTPResultType<InputStream>
+    this.server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(this.profileWithoutDRM.trimIndent())
     )
 
     val task0 =
@@ -1690,7 +1672,7 @@ abstract class ProfileAccountLoginTaskContract {
         profile = this.profile,
         account = this.account,
         loginStrings = this.loginStrings,
-        patronParsers = this.patronParsers,
+        patronParsers = this.patronParserFactory,
         request = request0
       )
 
@@ -1706,7 +1688,7 @@ abstract class ProfileAccountLoginTaskContract {
         profile = this.profile,
         account = this.account,
         loginStrings = this.loginStrings,
-        patronParsers = this.patronParsers,
+        patronParsers = this.patronParserFactory,
         request = request1
       )
 
@@ -1722,10 +1704,18 @@ abstract class ProfileAccountLoginTaskContract {
         authenticationDescription = "Description",
         accessToken = "A TOKEN!",
         patronInfo = "{}",
-        cookies = setOf("cookie0=23; cookie1=24", "cookie2=25")
+        cookies = listOf(
+          AccountCookie("https://example", "cookie0=23"),
+          AccountCookie("https://fake", "cookie1=24; Path=/; Secure"),
+          AccountCookie("http://something", "cookie2=25; Path=/abc; Expires=Wed, 23 Dec 2020 07:28:00 GMT")
+        )
       ),
       state.credentials
     )
+
+    val req0 = this.server.takeRequest()
+    assertEquals(this.server.url("patron"), req0.requestUrl)
+    assertEquals(1, this.server.requestCount)
   }
 
   /**
@@ -1745,14 +1735,18 @@ abstract class ProfileAccountLoginTaskContract {
         accountId = this.accountID,
         accessToken = "A TOKEN!",
         patronInfo = "{}",
-        cookies = setOf("cookie0=23; cookie1=24", "cookie2=25")
+        cookies = listOf(
+          AccountCookie("https://example", "cookie0=23"),
+          AccountCookie("https://fake", "cookie1=24; Path=/; Secure"),
+          AccountCookie("http://something", "cookie2=25; Path=/abc; Expires=Wed, 23 Dec 2020 07:28:00 GMT")
+        )
       )
 
     val provider =
       Mockito.mock(AccountProviderType::class.java)
 
     Mockito.`when`(provider.patronSettingsURI)
-      .thenReturn(URI.create("urn:patron"))
+      .thenReturn(this.server.url("patron").toUri())
     Mockito.`when`(provider.authentication)
       .thenReturn(authDescription)
 
@@ -1774,34 +1768,10 @@ abstract class ProfileAccountLoginTaskContract {
     Mockito.`when`(this.account.loginState)
       .then { this.loginState }
 
-    val parser =
-      Mockito.mock(PatronUserProfileParserType::class.java)
-
-    val patronStream =
-      Mockito.mock(InputStream::class.java)
-
-    val profile =
-      PatronUserProfile(
-        settings = PatronSettings(false),
-        drm = listOf(),
-        authorization = null
-      )
-
-    Mockito.`when`(parser.parse())
-      .thenReturn(ParseResult.Success(listOf(), profile))
-    Mockito.`when`(this.patronParsers.createParser(URI.create("urn:patron"), patronStream, false))
-      .thenReturn(parser)
-
-    this.http.addResponse(
-      URI.create("urn:patron"),
-      HTTPResultOK(
-        "OK",
-        200,
-        patronStream,
-        0L,
-        mutableMapOf(),
-        0L
-      ) as HTTPResultType<InputStream>
+    this.server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(this.profileWithoutDRM.trimIndent())
     )
 
     val task0 =
@@ -1811,7 +1781,7 @@ abstract class ProfileAccountLoginTaskContract {
         profile = this.profile,
         account = this.account,
         loginStrings = this.loginStrings,
-        patronParsers = this.patronParsers,
+        patronParsers = this.patronParserFactory,
         request = request0
       )
 
@@ -1821,6 +1791,8 @@ abstract class ProfileAccountLoginTaskContract {
     TaskDumps.dump(logger, result0)
 
     this.account.loginState as AccountNotLoggedIn
+
+    assertEquals(0, this.server.requestCount)
   }
 
   /**
@@ -1845,7 +1817,7 @@ abstract class ProfileAccountLoginTaskContract {
       Mockito.mock(AccountProviderType::class.java)
 
     Mockito.`when`(provider.patronSettingsURI)
-      .thenReturn(URI.create("urn:patron"))
+      .thenReturn(this.server.url("patron").toUri())
     Mockito.`when`(provider.authentication)
       .thenReturn(authDescription)
 
@@ -1867,34 +1839,10 @@ abstract class ProfileAccountLoginTaskContract {
     Mockito.`when`(this.account.loginState)
       .then { this.loginState }
 
-    val parser =
-      Mockito.mock(PatronUserProfileParserType::class.java)
-
-    val patronStream =
-      Mockito.mock(InputStream::class.java)
-
-    val profile =
-      PatronUserProfile(
-        settings = PatronSettings(false),
-        drm = listOf(),
-        authorization = null
-      )
-
-    Mockito.`when`(parser.parse())
-      .thenReturn(ParseResult.Success(listOf(), profile))
-    Mockito.`when`(this.patronParsers.createParser(URI.create("urn:patron"), patronStream, false))
-      .thenReturn(parser)
-
-    this.http.addResponse(
-      URI.create("urn:patron"),
-      HTTPResultOK(
-        "OK",
-        200,
-        patronStream,
-        0L,
-        mutableMapOf(),
-        0L
-      ) as HTTPResultType<InputStream>
+    this.server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(this.profileWithoutDRM.trimIndent())
     )
 
     val task0 =
@@ -1904,7 +1852,7 @@ abstract class ProfileAccountLoginTaskContract {
         profile = this.profile,
         account = this.account,
         loginStrings = this.loginStrings,
-        patronParsers = this.patronParsers,
+        patronParsers = this.patronParserFactory,
         request = request0
       )
 
@@ -1914,6 +1862,8 @@ abstract class ProfileAccountLoginTaskContract {
     TaskDumps.dump(logger, result0)
 
     this.account.loginState as AccountNotLoggedIn
+
+    assertEquals(0, this.server.requestCount)
   }
 
   /**
@@ -1943,7 +1893,7 @@ abstract class ProfileAccountLoginTaskContract {
       Mockito.mock(AccountProviderType::class.java)
 
     Mockito.`when`(provider.patronSettingsURI)
-      .thenReturn(URI.create("urn:patron"))
+      .thenReturn(this.server.url("patron").toUri())
     Mockito.`when`(provider.authentication)
       .thenReturn(authDescription)
 
@@ -1965,34 +1915,10 @@ abstract class ProfileAccountLoginTaskContract {
     Mockito.`when`(this.account.loginState)
       .then { this.loginState }
 
-    val parser =
-      Mockito.mock(PatronUserProfileParserType::class.java)
-
-    val patronStream =
-      Mockito.mock(InputStream::class.java)
-
-    val profile =
-      PatronUserProfile(
-        settings = PatronSettings(false),
-        drm = listOf(),
-        authorization = null
-      )
-
-    Mockito.`when`(parser.parse())
-      .thenReturn(ParseResult.Success(listOf(), profile))
-    Mockito.`when`(this.patronParsers.createParser(URI.create("urn:patron"), patronStream, false))
-      .thenReturn(parser)
-
-    this.http.addResponse(
-      URI.create("urn:patron"),
-      HTTPResultOK(
-        "OK",
-        200,
-        patronStream,
-        0L,
-        mutableMapOf(),
-        0L
-      ) as HTTPResultType<InputStream>
+    this.server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(this.profileWithoutDRM.trimIndent())
     )
 
     val task0 =
@@ -2002,7 +1928,7 @@ abstract class ProfileAccountLoginTaskContract {
         profile = this.profile,
         account = this.account,
         loginStrings = this.loginStrings,
-        patronParsers = this.patronParsers,
+        patronParsers = this.patronParserFactory,
         request = request0
       )
 
@@ -2018,7 +1944,7 @@ abstract class ProfileAccountLoginTaskContract {
         profile = this.profile,
         account = this.account,
         loginStrings = this.loginStrings,
-        patronParsers = this.patronParsers,
+        patronParsers = this.patronParserFactory,
         request = request1
       )
 
@@ -2027,6 +1953,8 @@ abstract class ProfileAccountLoginTaskContract {
 
     val state =
       this.account.loginState as AccountNotLoggedIn
+
+    assertEquals(0, this.server.requestCount)
   }
 
   private fun <T> anyNonNull(): T =

@@ -1,10 +1,14 @@
 package org.nypl.simplified.ui.accounts.saml20
 
+import org.nypl.simplified.accounts.api.AccountCookie
+
 /**
  * Events raised during the SAML login process.
  */
 
 sealed class AccountSAML20Event {
+
+  class WebViewClientReady() : AccountSAML20Event()
 
   /**
    * The process failed.
@@ -21,6 +25,6 @@ sealed class AccountSAML20Event {
   data class AccessTokenObtained(
     val token: String,
     val patronInfo: String,
-    val cookies: Set<String>
+    val cookies: List<AccountCookie>
   ) : AccountSAML20Event()
 }

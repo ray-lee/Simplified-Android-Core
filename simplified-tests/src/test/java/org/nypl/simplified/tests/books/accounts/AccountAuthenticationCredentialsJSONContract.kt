@@ -11,6 +11,7 @@ import org.nypl.simplified.accounts.api.AccountAuthenticationAdobeClientToken
 import org.nypl.simplified.accounts.api.AccountAuthenticationAdobePostActivationCredentials
 import org.nypl.simplified.accounts.api.AccountAuthenticationAdobePreActivationCredentials
 import org.nypl.simplified.accounts.api.AccountAuthenticationCredentials
+import org.nypl.simplified.accounts.api.AccountCookie
 import org.nypl.simplified.accounts.api.AccountPassword
 import org.nypl.simplified.accounts.api.AccountUsername
 import org.nypl.simplified.accounts.json.AccountAuthenticationCredentialsJSON
@@ -130,7 +131,11 @@ abstract class AccountAuthenticationCredentialsJSONContract {
         adobeCredentials = adobe,
         authenticationDescription = "fake",
         patronInfo = "{}",
-        cookies = setOf("cookie0=23; cookie1=24", "cookie2=25")
+        cookies = listOf(
+          AccountCookie("https://example", "cookie0=23"),
+          AccountCookie("https://fake", "cookie1=24; Path=/; Secure"),
+          AccountCookie("http://something", "cookie2=25; Path=/abc; Expires=Wed, 23 Dec 2020 07:28:00 GMT")
+        )
       )
 
     val creds1 = deserializeFromJSON(serializeToJSON(creds0))

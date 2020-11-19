@@ -12,6 +12,7 @@ import org.nypl.simplified.accounts.api.AccountAuthenticationAdobeClientToken
 import org.nypl.simplified.accounts.api.AccountAuthenticationAdobePostActivationCredentials
 import org.nypl.simplified.accounts.api.AccountAuthenticationAdobePreActivationCredentials
 import org.nypl.simplified.accounts.api.AccountAuthenticationCredentials
+import org.nypl.simplified.accounts.api.AccountCookie
 import org.nypl.simplified.accounts.api.AccountPassword
 import org.nypl.simplified.accounts.api.AccountUsername
 import org.nypl.simplified.json.core.JSONParseException
@@ -71,7 +72,11 @@ object AccountAuthenticationCredentialsJSON {
 
         val cookieArray = objectMapper.createArrayNode()
         for (cookie in credentials.cookies) {
-          cookieArray.add(cookie)
+          val cookieObject = objectMapper.createObjectNode()
+          cookieObject.put("url", cookie.url)
+          cookieObject.put("value", cookie.value)
+
+          cookieArray.add(cookieObject)
         }
         authObject.set("cookies", cookieArray)
       }
@@ -166,18 +171,27 @@ object AccountAuthenticationCredentialsJSON {
       adobeCredentials = adobeCredentials,
       authenticationDescription = JSONParserUtilities.getStringOrNull(obj, "authenticationDescription"),
       patronInfo = JSONParserUtilities.getString(obj, "patronInfo"),
-      cookies = deserializeStringArray(JSONParserUtilities.getArray(obj, "cookies"))
+      cookies = deserializeCookies(JSONParserUtilities.getArray(obj, "cookies"))
     )
   }
 
-  private fun deserializeStringArray(
+  private fun deserializeCookies(
     array: ArrayNode
-  ): Set<String> {
-    val results = mutableSetOf<String>()
+  ): List<AccountCookie> {
+    val results = mutableListOf<AccountCookie>()
+
     for (index in 0 until array.size()) {
-      results.add(JSONParserUtilities.checkString(array[index]))
+      val obj = JSONParserUtilities.checkObject(index.toString(), array[index])
+
+      results.add(
+        AccountCookie(
+          JSONParserUtilities.getString(obj, "url"),
+          JSONParserUtilities.getString(obj, "value")
+        )
+      )
     }
-    return results.toSet()
+
+    return results
   }
 
   @Throws(JSONParseException::class)

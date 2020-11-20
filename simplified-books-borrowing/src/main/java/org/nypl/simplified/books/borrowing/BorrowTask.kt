@@ -232,7 +232,11 @@ class BorrowTask private constructor(
   ): BorrowSubtaskFactoryType {
     this.taskRecorder.beginNewStep("Finding subtask for acquisition path element...")
     val subtaskFactory =
-      this.requirements.subtasks.findSubtaskFor(pathElement.mimeType, context.currentURI())
+      this.requirements.subtasks.findSubtaskFor(
+        pathElement.mimeType,
+        context.currentURI(),
+        context.account
+      )
     if (subtaskFactory == null) {
       this.taskRecorder.currentStepFailed(
         message = "We don't know how to handle this kind of acquisition.",

@@ -10,14 +10,17 @@ import org.nypl.simplified.books.borrowing.BorrowContextType
 import org.nypl.simplified.books.borrowing.subtasks.BorrowSubtaskException.BorrowSubtaskFailed
 import org.nypl.simplified.books.borrowing.subtasks.BorrowSubtaskFactoryType
 import org.nypl.simplified.books.borrowing.subtasks.BorrowSubtaskType
+import java.net.CookieManager
+import java.net.CookieStore
+import java.net.HttpCookie
 import java.net.URI
 
 /**
  * A task that downloads a file for an account that uses SAML authentication. The download is
- * attempted, with any cookies from the account attached to the download requests. If the downloaded
- * file type is the expected content type, the file is saved to the book database. Otherwise, if the
- * downloaded file resembles a login form (the content type is HTML), the borrowing context is
- * notified that authentication is required.
+ * attempted, with any cookies belonging to the account attached to the download requests. If the
+ * downloaded file type is the expected content type, the file is saved to the book database.
+ * Otherwise, if the downloaded file resembles a login form (the content type is HTML), the
+ * borrowing context is notified that authentication is required.
  */
 
 class BorrowSAMLDownload private constructor() : BorrowSubtaskType {
@@ -40,14 +43,52 @@ class BorrowSAMLDownload private constructor() : BorrowSubtaskType {
         BorrowDirectDownload.isApplicableFor(type, target, account)
   }
 
-  override fun execute(context: BorrowContextType) {
+  override fun execute(
+    context: BorrowContextType
+  ) {
     context.taskRecorder.beginNewStep("Downloading with SAML auth...")
     context.bookDownloadIsRunning(null, 0L, 0L, "Requesting download...")
 
-    return BorrowHTTP.download(
+    val cookieStore = createAccountCookieStore(context.account)
+
+    BorrowHTTP.download(
       context = context,
-      onDownloadFailedUnacceptableMIME = this::onDownloadFailedUnacceptableMIME
+      onDownloadFailedUnacceptableMIME = this::onDownloadFailedUnacceptableMIME,
+      requestModifier = { properties ->
+        val requestCookies = sortedMapOf<String, String>()
+
+        cookieStore.get(properties.target).forEach { cookie ->
+          requestCookies.put(cookie.name, cookie.value)
+        }
+
+        properties.copy(
+          cookies = requestCookies
+        )
+      }
     )
+  }
+
+  /**
+   * Create a CookieStore containing the cookies belonging to the given account.
+   */
+
+  private fun createAccountCookieStore(
+    account: AccountReadableType
+  ): CookieStore {
+    val credentials = account.loginState.credentials as AccountAuthenticationCredentials.SAML2_0
+
+    val cookieManager = CookieManager()
+    val cookieStore = cookieManager.cookieStore
+
+    credentials.cookies.forEach { accountCookie ->
+      // HttpCookie.parse allows for multiple name/values in one header string, so it returns a
+      // list. In the account, if there is more than one cookie for a URL, each one is stored as
+      // a separate AccountCookie, so we can just call first() on the parsed result.
+
+      cookieStore.add(URI(accountCookie.url), HttpCookie.parse(accountCookie.value).first())
+    }
+
+    return cookieStore
   }
 
   private fun onDownloadFailedUnacceptableMIME(
@@ -55,7 +96,7 @@ class BorrowSAMLDownload private constructor() : BorrowSubtaskType {
     result: DownloadFailedUnacceptableMIME
   ) {
     val status = result.responseStatus as LSHTTPResponseStatus.Responded.OK
-    val receivedType = status.contentType
+    val receivedType = status.properties.contentType
 
     if (MIMECompatibility.isCompatibleLax(receivedType, loginPageContentType)) {
       TODO("I'm just a stub")

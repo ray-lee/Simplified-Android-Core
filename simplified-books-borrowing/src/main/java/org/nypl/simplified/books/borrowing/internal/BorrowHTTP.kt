@@ -7,6 +7,7 @@ import org.librarysimplified.http.api.LSHTTPAuthorizationBasic
 import org.librarysimplified.http.api.LSHTTPAuthorizationBearerToken
 import org.librarysimplified.http.api.LSHTTPAuthorizationType
 import org.librarysimplified.http.api.LSHTTPRequestBuilderType.AllowRedirects.ALLOW_UNSAFE_REDIRECTS
+import org.librarysimplified.http.api.LSHTTPRequestProperties
 import org.librarysimplified.http.downloads.LSHTTPDownloadRequest
 import org.librarysimplified.http.downloads.LSHTTPDownloadState
 import org.librarysimplified.http.downloads.LSHTTPDownloadState.DownloadReceiving
@@ -47,12 +48,18 @@ object BorrowHTTP {
   fun createDownloadRequest(
     context: BorrowContextType,
     target: URI,
-    outputFile: File
+    outputFile: File,
+    requestModifier: ((LSHTTPRequestProperties) -> LSHTTPRequestProperties)? = null
   ): LSHTTPDownloadRequest {
     val request =
       context.httpClient.newRequest(target)
         .setAuthorization(authorizationOf(context.account))
         .allowRedirects(ALLOW_UNSAFE_REDIRECTS)
+        .apply {
+          if (requestModifier != null) {
+            setRequestModifier(requestModifier)
+          }
+        }
         .build()
 
     return LSHTTPDownloadRequest(
@@ -225,7 +232,9 @@ object BorrowHTTP {
     context: BorrowContextType,
     onDownloadFailedUnacceptableMIME:
       (BorrowContextType, DownloadFailedUnacceptableMIME) -> Unit =
-        this::onDownloadFailedUnacceptableMimeDefault
+        this::onDownloadFailedUnacceptableMimeDefault,
+    requestModifier:
+      ((LSHTTPRequestProperties) -> LSHTTPRequestProperties)? = null
   ) {
     return try {
       val currentURI = context.currentURICheck()
@@ -240,7 +249,8 @@ object BorrowHTTP {
           createDownloadRequest(
             context = context,
             target = currentURI,
-            outputFile = temporaryFile
+            outputFile = temporaryFile,
+            requestModifier = requestModifier
           )
 
         when (val result = LSHTTPDownloads.download(downloadRequest)) {

@@ -154,7 +154,12 @@ class AccountSAML20ViewModel(
       return WebViewCookieDatabase(this.webViewDataDir).use {
         it.getAll().map { webViewCookie ->
           AccountCookie(
-            url = webViewCookie.hostKey,
+            url =
+              if (webViewCookie.isSecure > 0) {
+                "https://${webViewCookie.hostKey}"
+              } else {
+                "http://${webViewCookie.hostKey}"
+              },
             value = webViewCookie.toSetCookieString()
           )
         }

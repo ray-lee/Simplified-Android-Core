@@ -45,6 +45,6 @@ class BorrowDirectDownload private constructor() : BorrowSubtaskType {
     context.taskRecorder.beginNewStep("Downloading directly...")
     context.bookDownloadIsRunning(null, 0L, 0L, "Requesting download...")
 
-    return BorrowHTTP.download(context)
+    BorrowHTTP.download(context)
   }
 }

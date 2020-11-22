@@ -8,6 +8,11 @@ import org.nypl.simplified.accounts.api.AccountCookie
 
 sealed class AccountSAML20Event {
 
+  /**
+   * The web view client is ready for use. The login page should not be loaded until this event has
+   * fired.
+   */
+
   class WebViewClientReady() : AccountSAML20Event()
 
   /**

@@ -395,6 +395,15 @@ class BorrowTask private constructor(
     override val bookCurrent: Book
       get() = this.bookDatabaseEntry.book
 
+    override fun bookDownloadIsWaitingForExternalAuthentication() {
+      this.bookPublishStatus(
+        BookStatus.DownloadWaitingForExternalAuthentication(
+          id = this.bookCurrent.id,
+          downloadURI = this.currentURICheck()
+        )
+      )
+    }
+
     override fun bookDownloadIsRunning(
       expectedSize: Long?,
       receivedSize: Long,

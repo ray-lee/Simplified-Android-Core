@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.TimeZone
 
 /**
- * A cookie extracted from the WebView cookie database.
+ * A cookie extracted from the WebViewUtilities cookie database.
  */
 data class WebViewCookie(
   val hostKey: String,
@@ -47,6 +47,7 @@ data class WebViewCookie(
     val pairs = mutableListOf<List<String>>()
 
     pairs.add(listOf(this.name, this.value))
+    pairs.add(listOf("Domain", this.hostKey))
     pairs.add(listOf("Path", this.path))
 
     if (this.expiresUTC > 0) {

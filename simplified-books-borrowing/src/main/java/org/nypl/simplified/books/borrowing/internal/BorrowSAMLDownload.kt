@@ -99,7 +99,7 @@ class BorrowSAMLDownload private constructor() : BorrowSubtaskType {
     val receivedType = status.properties.contentType
 
     if (MIMECompatibility.isCompatibleLax(receivedType, loginPageContentType)) {
-      TODO("I'm just a stub")
+      context.bookDownloadIsWaitingForExternalAuthentication()
     } else {
       throw BorrowSubtaskFailed()
     }

@@ -15,7 +15,7 @@ import org.nypl.simplified.accounts.api.AccountProviderAuthenticationDescription
 import org.nypl.simplified.profiles.controller.api.ProfileAccountLoginRequest
 import org.nypl.simplified.profiles.controller.api.ProfilesControllerType
 import org.nypl.simplified.ui.accounts.R
-import org.nypl.simplified.webview.WebViewCookieDatabase
+import org.nypl.simplified.webview.WebViewUtilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -69,15 +69,13 @@ class AccountSAML20ViewModel(
        * know which cookies are which, so they all need to be removed.
        */
 
-      CookieManager.getInstance().removeAllCookies(this::onCookiesRemoved)
-    }
+      CookieManager.getInstance().removeAllCookies({
+        isReady = true
 
-    private fun onCookiesRemoved(value: Boolean) {
-      isReady = true
-
-      this.eventSubject.onNext(
-        AccountSAML20Event.WebViewClientReady()
-      )
+        this.eventSubject.onNext(
+          AccountSAML20Event.WebViewClientReady()
+        )
+      })
     }
 
     override fun shouldOverrideUrlLoading(
@@ -117,7 +115,7 @@ class AccountSAML20ViewModel(
           return true
         }
 
-        val cookies = this.dumpWebViewCookies()
+        val cookies = WebViewUtilities.dumpCookiesAsAccountCookies(this.webViewDataDir)
 
         this.logger.debug("obtained access token")
         this.authInfo.set(
@@ -146,24 +144,6 @@ class AccountSAML20ViewModel(
         return true
       }
       return false
-    }
-
-    private fun dumpWebViewCookies(): List<AccountCookie> {
-      CookieManager.getInstance().flush()
-
-      return WebViewCookieDatabase(this.webViewDataDir).use {
-        it.getAll().map { webViewCookie ->
-          AccountCookie(
-            url =
-              if (webViewCookie.isSecure > 0) {
-                "https://${webViewCookie.hostKey}"
-              } else {
-                "http://${webViewCookie.hostKey}"
-              },
-            value = webViewCookie.toSetCookieString()
-          )
-        }
-      }
     }
   }
 

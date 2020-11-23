@@ -31,8 +31,6 @@
   <string name="catalogBookAvailabilityReservedTimed">Your reservation expires in %1$s.</string>
   <string name="catalogBookAvailabilityRevoked">This book is waiting to be returned.</string>
   <string name="catalogBookCoverDescription">Book cover image</string>
-  <string name="catalogBookDownloadLoginFailed">Login failed</string>
-  <string name="catalogBookDownloadLoginFailedMessage">The login could not be completed.</string>
 
   <string name="catalogBookFormatAudioBook">Audiobook</string>
   <string name="catalogBookFormatEPUB">eBook</string>

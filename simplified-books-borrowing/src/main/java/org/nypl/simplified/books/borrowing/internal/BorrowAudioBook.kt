@@ -83,11 +83,18 @@ class BorrowAudioBook private constructor() : BorrowSubtaskType {
     val audioBookCredentials: AudioBookCredentials? =
       context.account.loginState.credentials?.let { credentials ->
         when (credentials) {
-          is AccountAuthenticationCredentials.Basic ->
-            AudioBookCredentials.UsernamePassword(
-              userName = credentials.userName.value,
-              password = credentials.password.value
-            )
+          is AccountAuthenticationCredentials.Basic -> {
+            if (credentials.password.value.isBlank()) {
+              AudioBookCredentials.UsernameOnly(
+                userName = credentials.userName.value
+              )
+            } else {
+              AudioBookCredentials.UsernamePassword(
+                userName = credentials.userName.value,
+                password = credentials.password.value
+              )
+            }
+          }
           is AccountAuthenticationCredentials.OAuthWithIntermediary ->
             AudioBookCredentials.BearerToken(accessToken = credentials.accessToken)
           is AccountAuthenticationCredentials.SAML2_0 ->

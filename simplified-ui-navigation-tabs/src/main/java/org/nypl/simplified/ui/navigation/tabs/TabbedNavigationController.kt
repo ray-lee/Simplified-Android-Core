@@ -26,9 +26,9 @@ import org.nypl.simplified.feeds.api.FeedFacet.FeedFacetPseudo.Sorting.SortBy.SO
 import org.nypl.simplified.profiles.controller.api.ProfilesControllerType
 import org.nypl.simplified.ui.accounts.AccountFragment
 import org.nypl.simplified.ui.accounts.AccountFragmentParameters
-import org.nypl.simplified.ui.accounts.AccountRegistryFragment
-import org.nypl.simplified.ui.accounts.AccountsFragment
-import org.nypl.simplified.ui.accounts.AccountsFragmentParameters
+import org.nypl.simplified.ui.accounts.AccountListFragment
+import org.nypl.simplified.ui.accounts.AccountListRegistryFragment
+import org.nypl.simplified.ui.accounts.AccountListFragmentParameters
 import org.nypl.simplified.ui.accounts.saml20.AccountSAML20Fragment
 import org.nypl.simplified.ui.accounts.saml20.AccountSAML20FragmentParameters
 import org.nypl.simplified.ui.catalog.CatalogFeedArguments
@@ -293,8 +293,8 @@ class TabbedNavigationController private constructor(
 
   override fun openSettingsAccounts() {
     this.navigator.addFragment(
-      fragment = AccountsFragment.create(
-        AccountsFragmentParameters(
+      fragment = AccountListFragment.create(
+        AccountListFragmentParameters(
           shouldShowLibraryRegistryMenu = this.settingsConfiguration.allowAccountsRegistryAccess
         )
       ),
@@ -411,7 +411,7 @@ class TabbedNavigationController private constructor(
 
   override fun openSettingsAccountRegistry() {
     this.navigator.addFragment(
-      fragment = AccountRegistryFragment(),
+      fragment = AccountListRegistryFragment(),
       tab = R.id.tabSettings
     )
   }

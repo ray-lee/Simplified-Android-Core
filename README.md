@@ -45,12 +45,14 @@ same core:
     * [JDK](#jdk)
     * [Nexus Credentials](#nexus-credentials)
     * [APK Signing](#apk-signing)
+    * [Enabling DRM](#enabling-drm)
     * [Adobe DRM](#adobe-drm-support)
     * [Findaway DRM](#findaway-audiobook-drm-support)
 * [Development](#development)
   * [Branching/Merging](#branchingmerging)
   * [Project Structure](#project-structure--architecture)
     * [MVC](#mvc)
+    * [MVVM](#mvvm)
     * [API vs SPI](#api-vs-spi)
     * [Modules](#modules)
   * [Binaries](#binaries)
@@ -72,7 +74,7 @@ This will build all of the code and run the unit tests, but only the
 [Vanilla](simplified-app-vanilla) application will be built by default. In
 order to build the other applications such as [SimplyE](simplified-app-simplye),
 it's necessary to obtain the correct [credentials](#nexus-credentials) from the
-NYPL and [enable DRM](#drm).
+NYPL and [enable DRM](#enabling-drm).
 
 #### The Longer Version
 
@@ -157,7 +159,7 @@ $ ./gradlew clean assembleRelease test
 $ ./gradlew clean assemble test
 ~~~
 
-#### DRM
+#### Enabling DRM
 
 The application contains optional support for various DRM systems, and these
 must be enabled explicitly in order to build [SimplyE](simplified-app-simplye).
@@ -229,6 +231,12 @@ architecture distributed over the application modules. The _controller_ in the a
 task-based and executes all tasks on a background thread to avoid any possibility of blocking
 the Android UI thread.
 
+#### MVVM
+
+Newer application modules, roughly follow an [MVVM](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel) architecture.
+The _View Model_ in the application exposes reactive properties
+and executes all tasks on a background thread. The _View_ observes those properties and updates on the Android UI thread.
+
 #### API vs SPI
 
 The project makes various references to _APIs_ and _SPIs_. _API_ stands for _application
@@ -293,6 +301,12 @@ numbers over the whole project). Metadata used to publish builds (such as Maven 
 numbers, etc) is defined in the `gradle.properties` file in each module. The [gradle.properties](gradle.properties)
 file in the root of the project defines default values that are overridden as necessary by each
 module.
+
+#### Test suite
+
+We aggregate all unit tests in the [simplified-tests](simplified-tests) module. Tests should
+be written using the JUnit 5 library, although at the time of writing we have [one test](simplified-tests/src/test/java/org/nypl/simplified/tests/webview/CookiesContract.kt)
+that still requires JUnit 4 due to the use of [Roboelectric](http://robolectric.org/).
 
 #### Modules
 

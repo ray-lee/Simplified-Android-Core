@@ -6,11 +6,11 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.joda.time.DateTime
 import org.joda.time.Instant
-import org.junit.After
-import org.junit.Assert
-import org.junit.Assert.assertEquals
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.librarysimplified.http.api.LSHTTPClientConfiguration
 import org.librarysimplified.http.api.LSHTTPClientType
 import org.librarysimplified.http.bearer_token.LSHTTPBearerTokenInterceptors
@@ -52,12 +52,13 @@ import org.nypl.simplified.opds.core.OPDSAvailabilityLoanable
 import org.nypl.simplified.profiles.api.ProfileReadableType
 import org.nypl.simplified.taskrecorder.api.TaskRecorder
 import org.nypl.simplified.taskrecorder.api.TaskRecorderType
-import org.nypl.simplified.tests.MockAccountProviders
-import org.nypl.simplified.tests.MockBookDatabase
-import org.nypl.simplified.tests.MockBookDatabaseEntry
-import org.nypl.simplified.tests.MockBundledContentResolver
-import org.nypl.simplified.tests.MockContentResolver
 import org.nypl.simplified.tests.TestDirectories
+import org.nypl.simplified.tests.mocking.MockAccountProviders
+import org.nypl.simplified.tests.mocking.MockBookDatabase
+import org.nypl.simplified.tests.mocking.MockBookDatabaseEntry
+import org.nypl.simplified.tests.mocking.MockBorrowContext
+import org.nypl.simplified.tests.mocking.MockBundledContentResolver
+import org.nypl.simplified.tests.mocking.MockContentResolver
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
@@ -89,7 +90,7 @@ class BorrowLoanCreateTest {
     assertEquals(clazz, registryStatus.javaClass)
   }
 
-  @Before
+  @BeforeEach
   fun testSetup() {
     this.taskRecorder =
       TaskRecorder.create()
@@ -195,7 +196,7 @@ class BorrowLoanCreateTest {
     this.bookEvents.add(event)
   }
 
-  @After
+  @AfterEach
   fun tearDown() {
     this.bookRegistrySub?.dispose()
     this.webServer.close()
@@ -211,7 +212,7 @@ class BorrowLoanCreateTest {
 
     try {
       task.execute(this.context)
-      Assert.fail()
+      Assertions.fail()
     } catch (e: Exception) {
       this.logger.error("exception: ", e)
     }
@@ -238,7 +239,7 @@ class BorrowLoanCreateTest {
 
     try {
       task.execute(this.context)
-      Assert.fail()
+      Assertions.fail()
     } catch (e: Exception) {
       this.logger.error("exception: ", e)
     }
@@ -267,7 +268,7 @@ class BorrowLoanCreateTest {
 
     try {
       task.execute(this.context)
-      Assert.fail()
+      Assertions.fail()
     } catch (e: Exception) {
       this.logger.error("exception: ", e)
     }
@@ -301,7 +302,7 @@ class BorrowLoanCreateTest {
 
     try {
       task.execute(this.context)
-      Assert.fail()
+      Assertions.fail()
     } catch (e: Exception) {
       this.logger.error("exception: ", e)
     }
@@ -338,7 +339,7 @@ class BorrowLoanCreateTest {
 
     try {
       task.execute(this.context)
-      Assert.fail()
+      Assertions.fail()
     } catch (e: Exception) {
       this.logger.error("exception: ", e)
     }
@@ -507,7 +508,7 @@ class BorrowLoanCreateTest {
 
     try {
       task.execute(this.context)
-      Assert.fail()
+      Assertions.fail()
     } catch (e: BorrowSubtaskHaltedEarly) {
       this.logger.debug("halted early: ", e)
     } catch (e: Exception) {
@@ -561,7 +562,7 @@ class BorrowLoanCreateTest {
 
     try {
       task.execute(this.context)
-      Assert.fail()
+      Assertions.fail()
     } catch (e: BorrowSubtaskHaltedEarly) {
       this.logger.debug("halted early: ", e)
     } catch (e: Exception) {
@@ -613,7 +614,7 @@ class BorrowLoanCreateTest {
 
     try {
       task.execute(this.context)
-      Assert.fail()
+      Assertions.fail()
     } catch (e: Exception) {
       this.logger.error("exception: ", e)
     }
